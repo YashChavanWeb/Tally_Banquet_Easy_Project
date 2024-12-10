@@ -22,9 +22,9 @@ $escapedDecoded = htmlspecialchars($decoded, ENT_QUOTES, 'UTF-8');
 
 //DATABASE CONNECTION
 $host = "localhost";
-$dbname = "Tally";
+$dbname = "Tallydb";
 $username = "postgres";
-$password = "saraadmin";
+$password = "12345678";
 $port = 5432;
 
 try {
