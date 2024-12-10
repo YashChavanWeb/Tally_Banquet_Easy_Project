@@ -1,8 +1,8 @@
 <?php
 // Database connection details (adjust these as per your environment)
-$dsn = 'pgsql:host=localhost;dbname=Tallydb';
+$dsn = 'pgsql:host=localhost;dbname=demo';
 $username = 'postgres';
-$password = '12345678';
+$password = 'krisha';
 
 
 // Include the config.php file to load database credentials and connection string

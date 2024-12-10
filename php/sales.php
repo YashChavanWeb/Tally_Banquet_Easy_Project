@@ -47,9 +47,9 @@ $receipt_narration = "Yash Chavan payed 10,000 by cheque to banquet easy";
 
 // Database connection
 $host = 'localhost';
-$dbname = 'Tallydb';
+$dbname = 'demo';
 $username = 'postgres';
-$password = '12345678';
+$password = 'krisha';
 
 try{
 
