@@ -46,14 +46,77 @@ $receipt_narration = "Yash Chavan payed 10,000 by cheque to banquet easy";
 
 // Database connection
 $host = 'localhost';
-$dbname = 'demo';
+$dbname = 'Tallydb';
 $username = 'postgres';
-$password = 'krisha';
+$password = '12345678';
 
 // Set your variables
 $banquet_id = 1176;
 $client_id = 116784;
 $default_booking_id = 54372;
+
+
+$xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><ENVELOPE></ENVELOPE>');
+
+// Add HEADER node
+$header = $xml->addChild('HEADER');
+$header->addChild('TALLYREQUEST', 'Import Data');
+
+// Add BODY node
+$body = $xml->addChild('BODY');
+
+// Add IMPORTDATA node
+$importData = $body->addChild('IMPORTDATA');
+
+// Add REQUESTDESC node
+$requestDesc = $importData->addChild('REQUESTDESC');
+$requestDesc->addChild('REPORTNAME', 'All Masters');
+
+// Add STATICVARIABLES node
+$staticVariables = $requestDesc->addChild('STATICVARIABLES');
+$staticVariables->addChild('SVCURRENTCOMPANY', 'ABC Pvt Ltd');
+
+// Add REQUESTDATA node
+$requestData = $importData->addChild('REQUESTDATA');
+
+
+try {
+    // Create a PostgreSQL database connection
+    $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Prepare SQL query to fetch data from bookings table
+    $stmt = $pdo->prepare("
+        SELECT 
+            b.id AS booking_id,
+            b.reg_date AS booking_date,
+            c.id AS client_id,
+            c.fullname AS client_name,
+            b.total AS total_amount
+        FROM 
+            public.bookings b
+        INNER JOIN 
+            public.clients c ON b.client = c.id
+        WHERE 
+            b.reg_date BETWEEN '2024-10-01 00:00:00' AND '2024-12-05 00:00:00'
+            AND b.banquet = 1176
+        ORDER BY 
+            b.reg_date DESC
+            LIMIT 5;
+    ");
+
+    // Execute the query
+    $stmt->execute();
+
+    // Fetch all rows from the query result
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // If no rows are found, throw an exception
+    if (empty($rows)) {
+        throw new Exception("No data found in the database.");
+    }
+
+    foreach ($rows as $row) {
 
 try {
 
@@ -128,29 +191,6 @@ try {
     }
 
 
-// Create the initial XML structure
-$xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><ENVELOPE></ENVELOPE>');
-
-// Add HEADER node
-$header = $xml->addChild('HEADER');
-$header->addChild('TALLYREQUEST', 'Import Data');
-
-// Add BODY node
-$body = $xml->addChild('BODY');
-
-// Add IMPORTDATA node
-$importData = $body->addChild('IMPORTDATA');
-
-// Add REQUESTDESC node
-$requestDesc = $importData->addChild('REQUESTDESC');
-$requestDesc->addChild('REPORTNAME', 'All Masters');
-
-// Add STATICVARIABLES node
-$staticVariables = $requestDesc->addChild('STATICVARIABLES');
-$staticVariables->addChild('SVCURRENTCOMPANY', 'ABC Pvt Ltd');
-
-// Add REQUESTDATA node
-$requestData = $importData->addChild('REQUESTDATA');
 
 // Start of the Sales voucher of 25,000
 $tallyMessage = $requestData->addChild('TALLYMESSAGE');
@@ -1043,9 +1083,8 @@ catch (PDOException $e) {
 }
 
 
-// Output the XML
-header('Content-Type: application/xml; charset=utf-8');
-echo $xml->asXML();
+
+
 }catch (PDOException $e) {
     die("Database Connection failed: " . $e->getMessage());
 } catch (Exception $e) {
@@ -1053,4 +1092,18 @@ echo $xml->asXML();
 } finally {
     $conn = null;
 }
+}
+}catch (PDOException $e) {
+    // Handle database connection or query errors
+    echo "Database error: " . $e->getMessage();
+} catch (Exception $e) {
+    // Handle any other errors
+    echo "Error: " . $e->getMessage();
+}
+
+
+// Output the XML
+header('Content-Type: application/xml; charset=utf-8');
+echo $xml->asXML();
+
 ?>
