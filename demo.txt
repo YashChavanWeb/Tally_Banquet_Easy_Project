@@ -1,0 +1,47 @@
+// Implementable but need help
+
+jan 1 
+
+bookings
+row read - booking id -> client id (due to join)
+due to this sales voucher - sales split - receipt
+
+may 1
+
+
+sales 
+split 
+receipt 
+
+
+// file 1
+
+tallyxml(booking_id) {
+    1 client logic
+    // code 
+    3 queries - id logic 
+}
+
+
+// file 2
+tallyxml(booking_id)
+
+
+
+
+// dates
+// names
+// amount - pax, perhead
+
+
+
+tallymessage
+    sales
+        split
+/tallymessage
+
+tallymessage
+    receipt
+/tallymessage
+
+

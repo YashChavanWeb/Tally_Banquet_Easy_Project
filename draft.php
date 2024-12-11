@@ -1,9 +1,7 @@
 <?php
-$partyName = "Yash Chavan";
-$voucherNumber = "1";
-$reportName = "Yash";
+$voucherNumber1 = "1";
+$voucherNumber2 = "2";
 $companyName = "ABC Pvt Ltd";
-$date = "20240401";
 $gstRegistrationType = "Regular";
 $gstRegistration = "ABC Pvt Ltd";
 $country = "India";
@@ -21,7 +19,7 @@ $bill_type = "New Ref";
 
 //Dynamic data for receipt 
 $voucher_receipt_id = "00000002";
-$voucher_receipt_Key = "00000010";
+$voucher_receipt_Key = "00000004";
 $guId_receipt = "00000002";
 $billType_receipt = "Agst Ref";
 $amount_receipt = "10000.00";
@@ -37,16 +35,16 @@ $billType = "New Ref";
 $name = 'BQ-1';
 $ledgerName = "Banquet Sales";
 $voucher_ID = "00000001";
-$voucher_Key = "00000008";
+$voucher_Key = "00000002";
 $guID = "00000001";
 $reportName = "Yash";
 $receipt_narration = "Yash Chavan payed 10,000 by cheque to banquet easy";  
 
 // Database connection
 $host = 'localhost';
-$dbname = 'demo';
+$dbname = 'Tallydb';
 $username = 'postgres';
-$password = 'krisha';
+$password = '12345678';
 
 try {
     // Create PDO instance and connect to database
@@ -101,12 +99,15 @@ try {
 
     // Update dynamic values from query results
     if ($result1) {
-        $date = $result1['datex'];
+        // Convert datex from database to YYYYMMDD format
+        $originalDate = $result1['datex'];
+        $date = DateTime::createFromFormat('Y-m-d', $originalDate)->format('Ymd');
     } else {
         $date = "20240401";  // Default date
     }
 
     if ($result2) {
+
         $total_sales_amount = -$result2['total_bill_amount'];
         $partyName = $result2['client_fullname'];
     } else {
@@ -165,8 +166,6 @@ $vch->addChild('COUNTRYOFRESIDENCE', $country);
 $vch->addChild('PARTYNAME', $partyName);
 
 
-
-
 // GST Registration
 $gstRegistrationNode = $vch->addChild('GSTREGISTRATION', $gstRegistration);
 $gstRegistrationNode->addAttribute('TAXTYPE', 'GST');
@@ -174,7 +173,7 @@ $gstRegistrationNode->addAttribute('TAXREGISTRATION', '');
 
 $vch->addChild('VOUCHERTYPENAME', 'Sales');
 $vch->addChild('PARTYLEDGERNAME', $partyName);
-$vch->addChild('VOUCHERNUMBER', $voucherNumber);
+$vch->addChild('VOUCHERNUMBER', $voucherNumber1);
 $vch->addChild('BASICBUYERNAME', $partyName);
 $vch->addChild('CMPGSTREGISTRATIONTYPE', $gstRegistrationType);
 $vch->addChild('PARTYMAILINGNAME', $partyName);
@@ -183,21 +182,21 @@ $vch->addChild('CONSIGNEECOUNTRYNAME', $country);
 $vch->addChild('BASICBASEPARTYNAME', $partyName);
 
 $vch->addChild('NUMBERINGSTYLE', 'Auto Retain');
-$vch->addChild('CSTFORMISSUETYPE', 'Not Applicable');
-$vch->addChild('CSTFORMRECVTYPE', 'Not Applicable');
+$vch->addChild('CSTFORMISSUETYPE', $escapedDecoded . ' Not Applicable');
+$vch->addChild('CSTFORMRECVTYPE', $escapedDecoded . ' Not Applicable');
 $vch->addChild('FBTPAYMENTTYPE', 'Default');
 $vch->addChild('PERSISTEDVIEW', 'Invoice Voucher View');
 $vch->addChild('VCHSTATUSTAXADJUSTMENT', 'Default');
 $vch->addChild('VCHSTATUSVOUCHERTYPE', $voucherType);
 $vch->addChild('VCHSTATUSTAXUNIT', $companyName);
-$vch->addChild('VCHGSTCLASS', 'Not Applicable');
+$vch->addChild('VCHGSTCLASS', $escapedDecoded . ' Not Applicable');
 $vch->addChild('VCHENTRYMODE', 'Item Invoice');
 
 // Status flags
 $statusFlags = [
     'DIFFACTUALQTY', 'ISMSTFROMSYNC', 'ISDELETED', 'ISSECURITYONWHENENTERED', 
     'ASORIGINAL', 'AUDITED', 'ISCOMMONPARTY', 'FORJOBCOSTING', 
-    'ISOPTIONAL', 'USEFOREXCISE', 'ISFORJOBWORKIN', 'ALLOWCONSUMPTION', 
+    'ISOPTIONAL','EFFECTIVEDATE', 'USEFOREXCISE', 'ISFORJOBWORKIN', 'ALLOWCONSUMPTION', 
     'USEFORINTEREST', 'USEFORGAINLOSS', 'USEFORGODOWNTRANSFER', 
     'USEFORCOMPOUND', 'USEFORSERVICETAX', 'ISREVERSECHARGEAPPLICABLE', 
     'ISSYSTEM', 'ISFETCHEDONLY', 'ISGSTOVERRIDDEN', 'ISCANCELLED', 
@@ -224,6 +223,8 @@ $vch->addChild('ISNULL', 'No');
 
 // More flag nodes as in the original XML
 $additionalFlags = [
+    'ISEXCISEVOUCHER','EXCISETAXOVERRIDE','USEFORTAXUNITTRANSFER','ISEXER1NOPOVERWRITE','ISEXF2NOPOVERWRITE',
+    'ISEXER3NOPOVERWRITE','IGNOREPOSVALIDATION','EXCISEOPENING','USEFORFINALPRODUCTION',
     'ISTDSOVERRIDDEN', 'ISTCSOVERRIDDEN', 'ISTDSTCSCASHVCH', 
     'INCLUDEADVPYMTVCH', 'ISSUBWORKSCONTRACT', 'ISVATOVERRIDDEN', 
     'IGNOREORIGVCHDATE', 'ISVATPAIDATCUSTOMS', 'ISDECLAREDTOCUSTOMS', 
@@ -271,9 +272,9 @@ foreach ($tagsWithValues as $tag => $value) {
 
 // Empty list elements
 $emptyLists = [
-    'EWAYBILLDETAILS', 'EXCLUDEDTAXATIONS', 'OLDAUDITENTRIES', 
-    'ACCOUNTAUDITENTRIES', 'AUDITENTRIES', 'DUTYHEADDETAILS', 
-    'GSTADVADJDETAILS'
+    'EWAYBILLDETAILS.LIST', 'EXCLUDEDTAXATIONS.LIST',
+    'OLDAUDITENTRIES.LIST', 'ACCOUNTAUDITENTRIES.LIST', 'AUDITENTRIES.LIST', 
+    'DUTYHEADDETAILS.LIST', 'GSTADVADJDETAILS.LIST'
 ];
 
 
@@ -363,9 +364,9 @@ foreach ($results as $result) {
     $batchAllocations = $inventoryEntries->addChild('BATCHALLOCATIONS.LIST');
     $batchAllocations->addChild('GODOWNNAME', 'Main Location');
     $batchAllocations->addChild('BATCHNAME', 'Primary Batch');
-    $batchAllocations->addChild('INDENTNO', 'Not Applicable');
-    $batchAllocations->addChild('ORDERNO', 'Not Applicable');
-    $batchAllocations->addChild('TRACKINGNUMBER', 'Not Applicable');
+    $batchAllocations->addChild('INDENTNO', $escapedDecoded . ' Not Applicable');
+    $batchAllocations->addChild('ORDERNO', $escapedDecoded . ' Not Applicable');
+    $batchAllocations->addChild('TRACKINGNUMBER', $escapedDecoded . ' Not Applicable');
     $batchAllocations->addChild('DYNAMICCSTISCLEARED', 'No');
     $batchAllocations->addChild('AMOUNT', $stock_item_amount);
 
@@ -387,9 +388,9 @@ foreach ($results as $result) {
     $oldAuditEntryIdsList->addChild('OLDAUDITENTRYIDS', '-1');
 
     // Accounting allocation details
-    $ledger_name = $service_name; // Ledger name from database
+    // Ledger name from database
     $accountingAllocations->addChild('LEDGERNAME', $ledger_name); // Ledger name
-    $accountingAllocations->addChild('GSTCLASS', 'Not Applicable');
+    $accountingAllocations->addChild('GSTCLASS', $escapedDecoded . ' Not Applicable');
 
     $accountingFixedElements = [
         'ISDEEMEDPOSITIVE' => 'No',
@@ -443,24 +444,7 @@ foreach ($results as $result) {
 }
 
     $emptylists2 = [
-        'CONTRITRANS', 'EWAYBILLERRORLIST', 
-        'IRNERRORLIST', 'HARYANAVAT', 'SUPPLEMENTARYDUTYHEADDETAILS', 
-        'INVOICEDELNOTES', 'INVOICEORDERLIST', 'INVOICEINDENTLIST', 
-        'ATTENDANCEENTRIES', 'ORIGINVOICEDETAILS', 'INVOICEEXPORTLIST', 
-        'GST', 'STKJRNLADDLCOSTDETAILS', 'PAYROLLMODEOFPAYMENT', 
-        'ATTDRECORDS', 'GSTEWAYCONSIGNORADDRESS', 'GSTEWAYCONSIGNEEADDRESS', 
-        'TEMPGSTRATEDETAILS', 'TEMPGSTADVADJUSTED', 'GSTBUYERADDRESS', 
-        'GSTCONSIGNEEADDRESS', 'INTERESTCOLLECTION', 'OLDAUDITENTRIES', 
-        'ACCOUNTAUDITENTRIES', 'AUDITENTRIES', 'INPUTCRALLOCS', 
-        'DUTYHEADDETAILS', 'EXCISEDUTYHEADDETAILS', 'RATEDETAILS', 
-        'SUMMARYALLOCS', 'CENVATDUTYALLOCATIONS', 'STPYMTDETAILS', 
-        'EXCISEPAYMENTALLOCATIONS', 'TAXBILLALLOCATIONS', 
-        'TAXOBJECTALLOCATIONS', 'TDSEXPENSEALLOCATIONS', 
-        'VATSTATUTORYDETAILS', 'COSTTRACKALLOCATIONS', 'REFVOUCHERDETAILS', 
-        'INVOICEWISEDETAILS', 'VATITCDETAILS', 'ADVANCETAXDETAILS', 
-        'TAXTYPEALLOCATIONS', 'EWAYBILLDETAILS.LIST', 'EXCLUDEDTAXATIONS.LIST',
-        'OLDAUDITENTRIES.LIST', 'ACCOUNTAUDITENTRIES.LIST', 'AUDITENTRIES.LIST', 
-        'DUTYHEADDETAILS.LIST', 'GSTADVADJDETAILS.LIST', 'CONTRITRANS.LIST', 
+        'CONTRITRANS.LIST', 
         'EWAYBILLERRORLIST.LIST', 'IRNERRORLIST.LIST', 'HARYANAVAT.LIST', 
         'SUPPLEMENTARYDUTYHEADDETAILS.LIST', 'INVOICEDELNOTES.LIST', 
         'INVOICEORDERLIST.LIST', 'INVOICEINDENTLIST.LIST', 'ATTENDANCEENTRIES.LIST', 
@@ -483,14 +467,59 @@ foreach ($results as $result) {
     $ledgerEntries->addChild('LEDGERFROMITEM', 'No');
     $ledgerEntries->addChild('REMOVEZEROENTRIES', 'No');
     $ledgerEntries->addChild('ISPARTYLEDGER', 'Yes');
-    $ledgerEntries->addChild('AMOUNT', $total_sales_amount);
+    $ledgerEntries->addChild('GSTOVERRIDDEN', 'No');
+    $ledgerEntries->addChild('ISGSTASSESSABLEVALUEOVERRIDDEN', 'No');
+    $ledgerEntries->addChild('STRDISGSTAPPLICABLE', 'No');
+    $ledgerEntries->addChild('STRDGSTISPARTYLEDGER', 'No');
+    $ledgerEntries->addChild('STRDGSTISDUTYLEDGER', 'No');
+    $ledgerEntries->addChild('CONTENTNEGISPOS', 'No');
+    $ledgerEntries->addChild('ISLASTDEEMEDPOSITIVE', 'Yes');
+    $ledgerEntries->addChild('ISCAPVATTAXALTERED', 'No');
+    $ledgerEntries->addChild('ISCAPVATNOTCLAIMED', 'No');
 
+    $ledgerEntries->addChild('AMOUNT', $total_sales_amount);
+    
+    $servicetaxList = $ledgerEntries->addChild('SERVICETAXDETAILS.LIST', ' ');
+    $bankAllocationsList = $ledgerEntries->addChild('BANKALLOCATIONS.LIST',' ');
     // Bill Allocations
     $billAllocations = $ledgerEntries->addChild('BILLALLOCATIONS.LIST');
     $billAllocations->addChild('NAME', $name);
     $billAllocations->addChild('BILLTYPE', $bill_type);
-    $billAllocations->addChild('TDSDEDUCTEEISSPECIALRATE', 'No');
+    $billAllocations->addChild('TDSDEDUCTEEISSPECIALRATE', 'No');   
     $billAllocations->addChild('AMOUNT', $total_sales_amount);
+
+    $billAllocations->addChild('INTERESTCOLLECTION.LIST', ' ');  
+    $billAllocations->addChild('STBILLCATEGORIES.LIST', ' ');  
+    
+
+    $emptylists4 = [
+        "INTERESTCOLLECTION.LIST",
+        "OLDAUDITENTRIES.LIST",
+        "ACCOUNTAUDITENTRIES.LIST",
+        "AUDITENTRIES.LIST",
+        "INPUTCRALLOCS.LIST",
+        "DUTYHEADDETAILS.LIST",
+        "EXCISEDUTYHEADDETAILS.LIST",
+        "RATEDETAILS.LIST",
+        "SUMMARYALLOCS.LIST",
+        "CENVATDUTYALLOCATIONS.LIST",
+        "STPYMTDETAILS.LIST",
+        "EXCISEPAYMENTALLOCATIONS.LIST",
+        "TAXBILLALLOCATIONS.LIST",
+        "TAXOBJECTALLOCATIONS.LIST",
+        "TDSEXPENSEALLOCATIONS.LIST",
+        "VATSTATUTORYDETAILS.LIST",
+        "COSTTRACKALLOCATIONS.LIST",
+        "REFVOUCHERDETAILS.LIST",
+        "INVOICEWISEDETAILS.LIST",
+        "VATITCDETAILS.LIST",
+        "ADVANCETAXDETAILS.LIST",
+        "TAXTYPEALLOCATIONS.LIST"
+    ];
+
+    foreach ($emptylists4 as $listName) {
+        $ledgerEntries ->addChild($listName, ' '); // Adding each tag with an empty string as its value
+        }
 
 
 
@@ -505,16 +534,503 @@ foreach ($results as $result) {
     'TEMPGSTADVADJUSTED.LIST', 
     'GSTBUYERADDRESS.LIST', 
     'GSTCONSIGNEEADDRESS.LIST',
-    'SERVICETAXDETAILS.LIST', 
-    'BANKALLOCATIONS.LIST', 
-    'INTERESTCOLLECTION.LIST', 
-    'STBILLCATEGORIES.LIST'
 ];
 
 foreach ($emptylists3 as $listName) {
     $vch->addChild($listName , ' ');
 }
 
+try {
+    // Create a PostgreSQL database connection
+    $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Prepare SQL query to fetch data from public.booking_payments
+    $stmt = $pdo->prepare("
+        SELECT
+          c.fullname AS client_fullname,
+          bp.amount AS payment_amount,
+          bp.balance AS remaining_balance,
+          bp.dop AS payment_date,
+          bp.modex AS payment_mode,
+          bp.txnid AS transaction_id,
+          bp.cheque_no AS cheque_number,
+          bp.cheque_bank AS cheque_bank,
+          bp.cheque_date AS cheque_date,
+          bp.commentsx AS comments,
+          bp.receipt_id AS receipt_id,
+          bp.banquet_receipt_no AS banquet_receipt_number
+        FROM 
+          public.booking_payments bp
+          INNER JOIN
+            public.bookings b ON bp.booking = b.id
+          INNER JOIN
+            public.clients c ON b.client = c.id
+        WHERE
+            bp.booking = 47987 -- OR c.fullname ILIKE '%aashay%';
+    ");
+
+    // Execute the query
+    $stmt->execute();
+
+    // Fetch all rows
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // If no rows found, throw an exception
+    if (empty($rows)) {
+        throw new Exception("No data found in the database");
+    }
+
+    // Format dates and process rows
+    foreach ($rows as &$row) {
+        // Format `dop` (payment_date) as YYYYMMDD (only the date part, ignoring time)
+        if (!empty($row['payment_date'])) {
+            $paymentDate = DateTime::createFromFormat('Y-m-d H:i:s', $row['payment_date']);
+            if ($paymentDate) {
+                $row['payment_date'] = $paymentDate->format('Ymd');
+            } else {
+                // Handle invalid date format if needed (e.g., logging or setting to a default value)
+                $row['payment_date'] = 'Invalid Date';
+            }
+        }
+
+        // Format `cheque_date` as YYYYMMDD (only the date part, ignoring time)
+        if (!empty($row['cheque_date'])) {
+            $chequeDate = DateTime::createFromFormat('Y-m-d H:i:s', $row['cheque_date']);
+            if ($chequeDate) {
+                $row['cheque_date'] = $chequeDate->format('Ymd');
+            } else {
+                // Handle invalid date format if needed (e.g., logging or setting to a default value)
+                $row['cheque_date'] = 'Invalid Date';
+            }
+        }
+    }
+
+
+    foreach ($rows as $row) {
+
+        // Start of RECEIPTS
+        $tallyMessage = $requestData->addChild('TALLYMESSAGE');
+        $tallyMessage->addAttribute('xmlns:UDF', 'TallyUDF');
+
+        // Add VOUCHER node
+        $vch = $tallyMessage->addChild('VOUCHER');
+        $vch->addAttribute('REMOTEID', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-'.$voucher_receipt_id);
+        $vch->addAttribute('VCHKEY', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-0000b146:'.$voucher_receipt_Key);
+        $vch->addAttribute('VCHTYPE', 'Receipt');
+        $vch->addAttribute('ACTION', 'Create');
+        $vch->addAttribute('OBJVIEW', 'Accounting Voucher View');
+
+
+        // OLDAUDITENTRYIDS.LIST node
+        $oldAuditEntryIdsList = $vch->addChild('OLDAUDITENTRYIDS.LIST', null);
+        $oldAuditEntryIdsList->addAttribute('TYPE', 'Number');
+        $oldAuditEntryIdsList->addChild('OLDAUDITENTRYIDS', '-1');
+
+        // Adding other elements from original script
+        $vch->addChild('DATE', $row['payment_date']);
+        $vch->addChild('VCHSTATUSDATE', $row['payment_date']);
+        $vch->addChild('GUID', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-' . $guId_receipt);
+        $vch->addChild('NARRATION', "Receipt ID: " . $row['receipt_id']);
+
+        // Adding GSTREGISTRATION with additional attributes
+        $gstRegistration = $vch->addChild('GSTREGISTRATION', 'ABC Pvt Ltd');
+        $gstRegistration->addAttribute('TAXTYPE', 'GST');
+        $gstRegistration->addAttribute('TAXREGISTRATION', '');
+
+        // Add additional fields related to the voucher
+        $vch->addChild('VOUCHERTYPENAME', 'Receipt');
+        $vch->addChild('PARTYLEDGERNAME', $row['client_fullname']);
+        $vch->addChild('VOUCHERNUMBER', $voucherNumber2);
+        $vch->addChild('CMPGSTREGISTRATIONTYPE', 'Regular');
+        $vch->addChild('NUMBERINGSTYLE', 'Auto Retain');
+        $vch->addChild('CSTFORMISSUETYPE', $escapedDecoded . ' Not Applicable');
+        $vch->addChild('CSTFORMRECVTYPE', $escapedDecoded . ' Not Applicable');
+        $vch->addChild('FBTPAYMENTTYPE', 'Default');
+        $vch->addChild('PERSISTEDVIEW', 'Accounting Voucher View');
+        $vch->addChild('VCHSTATUSTAXADJUSTMENT', 'Default');
+        $vch->addChild('VCHSTATUSVOUCHERTYPE', 'Receipt');
+        $vch->addChild('VCHSTATUSTAXUNIT', $companyName);
+        $vch->addChild('VCHGSTCLASS', $escapedDecoded . ' Not Applicable');
+
+        // Add more flags and status elements
+        $vch->addChild('DIFFACTUALQTY', 'No');
+        $vch->addChild('ISMSTFROMSYNC', 'No');
+        $vch->addChild('ISDELETED', 'No');
+        $vch->addChild('ISSECURITYONWHENENTERED', 'No');
+        $vch->addChild('ASORIGINAL', 'No');
+        $vch->addChild('AUDITED', 'No');
+        $vch->addChild('ISCOMMONPARTY', 'No');
+        $vch->addChild('FORJOBCOSTING', 'No');
+        $vch->addChild('ISOPTIONAL', 'No');
+        $vch->addChild('EFFECTIVEDATE', $date);
+        $vch->addChild('USEFOREXCISE', 'No');
+        $vch->addChild('ISFORJOBWORKIN', 'No');
+        $vch->addChild('ALLOWCONSUMPTION', 'No');
+        $vch->addChild('USEFORINTEREST', 'No');
+        $vch->addChild('USEFORGAINLOSS', 'No');
+        $vch->addChild('USEFORGODOWNTRANSFER', 'No');
+        $vch->addChild('USEFORCOMPOUND', 'No');
+        $vch->addChild('USEFORSERVICETAX', 'No');
+        $vch->addChild('ISREVERSECHARGEAPPLICABLE', 'No');
+        $vch->addChild('ISSYSTEM', 'No');
+        $vch->addChild('ISFETCHEDONLY', 'No');
+        $vch->addChild('ISGSTOVERRIDDEN', 'No');
+        $vch->addChild('ISCANCELLED', 'No');
+        $vch->addChild('ISONHOLD', 'No');
+        $vch->addChild('ISSUMMARY', 'No');
+        $vch->addChild('ISECOMMERCESUPPLY', 'No');
+        $vch->addChild('ISBOENOTAPPLICABLE', 'No');
+        $vch->addChild('ISGSTSECSEVENAPPLICABLE', 'No');
+        $vch->addChild('IGNOREEINVVALIDATION', 'No');
+        $vch->addChild('CMPGSTISOTHTERRITORYASSESSEE', 'No');
+        $vch->addChild('PARTYGSTISOTHTERRITORYASSESSEE', 'No');
+        $vch->addChild('IRNJSONEXPORTED', 'No');
+        $vch->addChild('IRNCANCELLED', 'No');
+        $vch->addChild('IGNOREGSTCONFLICTINMIG', 'No');
+        $vch->addChild('ISOPBALTRANSACTION', 'No');
+        $vch->addChild('IGNOREGSTFORMATVALIDATION', 'No');
+        $vch->addChild('ISELIGIBLEFORITC', 'Yes');
+        $vch->addChild('UPDATESUMMARYVALUES', 'No');
+        $vch->addChild('ISEWAYBILLAPPLICABLE', 'No');
+        $vch->addChild('ISDELETEDRETAINED', 'No');
+        $vch->addChild('ISNULL', 'No');
+        $vch->addChild('ISEXCISEVOUCHER', 'No');
+        $vch->addChild('EXCISETAXOVERRIDE', 'No');
+        $vch->addChild('USEFORTAXUNITTRANSFER', 'No');
+        $vch->addChild('ISEXER1NOPOVERWRITE', 'No');
+        $vch->addChild('ISEXF2NOPOVERWRITE', 'No');
+        $vch->addChild('ISEXER3NOPOVERWRITE', 'No');
+        $vch->addChild('IGNOREPOSVALIDATION', 'No');
+        $vch->addChild('EXCISEOPENING', 'No');
+        $vch->addChild('USEFORFINALPRODUCTION', 'No');
+        $vch->addChild('ISTDSOVERRIDDEN', 'No');
+        $vch->addChild('ISTCSOVERRIDDEN', 'No');
+        $vch->addChild('ISTDSTCSCASHVCH', 'No');
+        $vch->addChild('INCLUDEADVPYMTVCH', 'No');
+        $vch->addChild('ISSUBWORKSCONTRACT', 'No');
+        $vch->addChild('ISVATOVERRIDDEN', 'No');
+        $vch->addChild('IGNOREORIGVCHDATE', 'No');
+        $vch->addChild('ISVATPAIDATCUSTOMS', 'No');
+        $vch->addChild('ISDECLAREDTOCUSTOMS', 'No');
+        $vch->addChild('VATADVANCEPAYMENT', 'No');
+        $vch->addChild('VATADVPAY', 'No');
+        $vch->addChild('ISCSTDELCAREDGOODSSALES', 'No');
+        $vch->addChild('ISVATRESTAXINV', 'No');
+        $vch->addChild('ISSERVICETAXOVERRIDDEN', 'No');
+        $vch->addChild('ISISDVOUCHER', 'No');
+        $vch->addChild('ISEXCISEOVERRIDDEN', 'No');
+        $vch->addChild('ISEXCISESUPPLYVCH', 'No');
+        $vch->addChild('GSTNOTEXPORTED', 'No');
+        $vch->addChild('IGNOREGSTINVALIDATION', 'No');
+        $vch->addChild('ISGSTREFUND', 'No');
+        $vch->addChild('OVRDNEWAYBILLAPPLICABILITY', 'No');
+        $vch->addChild('ISVATPRINCIPALACCOUNT', 'No');
+
+
+
+
+        // Additional status and configuration flags
+        $statusFlags = [
+            'VCHSTATUSISVCHNUMUSED',
+            'VCHGSTSTATUSISINCLUDED',
+            'VCHGSTSTATUSISUNCERTAIN',
+            'VCHGSTSTATUSISEXCLUDED',
+            'VCHGSTSTATUSISAPPLICABLE',
+            'VCHGSTSTATUSISGSTR2BRECONCILED',
+            'VCHGSTSTATUSISGSTR2BONLYINPORTAL',
+            'VCHGSTSTATUSISGSTR2BONLYINBOOKS',
+            'VCHGSTSTATUSISGSTR2BMISMATCH',
+            'VCHGSTSTATUSISGSTR2BINDIFFPERIOD',
+            'VCHGSTSTATUSISRETEFFDATEOVERRDN',
+            'VCHGSTSTATUSISOVERRDN',
+            'VCHGSTSTATUSISSTATINDIFFDATE',
+            'VCHGSTSTATUSISRETINDIFFDATE',
+            'VCHGSTSTATUSMAINSECTIONEXCLUDED',
+            'VCHGSTSTATUSISBRANCHTRANSFEROUT',
+            'VCHGSTSTATUSISSYSTEMSUMMARY',
+            'VCHSTATUSISUNREGISTEREDRCM',
+            'VCHSTATUSISOPTIONAL',
+            'VCHSTATUSISCANCELLED',
+            'VCHSTATUSISDELETED',
+            'VCHSTATUSISOPENINGBALANCE',
+            'VCHSTATUSISFETCHEDONLY',
+            'PAYMENTLINKHASMULTIREF',
+            'ISSHIPPINGWITHINSTATE',
+            'ISOVERSEASTOURISTTRANS',
+            'ISDESIGNATEDZONEPARTY',
+            'HASCASHFLOW',
+            'ISPOSTDATED',
+            'USETRACKINGNUMBER',
+            'ISINVOICE',
+            'MFGJOURNAL',
+            'HASDISCOUNTS',
+            'ASPAYSLIP',
+            'ISCOSTCENTRE',
+            'ISSTXNONREALIZEDVCH',
+            'ISEXCISEMANUFACTURERON',
+            'ISBLANKCHEQUE',
+            'ISVOID'
+
+        ];
+
+        foreach ($statusFlags as $flag) {
+            $vch->addChild($flag, $flag === 'HASCASHFLOW' ? 'Yes' : 'No');
+        }
+
+        // More specific flags
+        $vch->addChild('ORDERLINESTATUS', 'No');
+        $vch->addChild('VATISAGNSTCANCSALES', 'No');
+        $vch->addChild('VATISPURCEXEMPTED', 'No');
+        $vch->addChild('ISVATRESTAXINVOICE', 'No');
+        $vch->addChild('VATISASSESABLECALCVCH', 'No');
+        $vch->addChild('ISVATDUTYPAID', 'Yes');
+        $vch->addChild('ISDELIVERYSAMEASCONSIGNEE', 'No');
+        $vch->addChild('ISDISPATCHSAMEASCONSIGNOR', 'No');
+        $vch->addChild('ISDELETEDVCHRETAINED', 'No');
+        $vch->addChild('CHANGEVCHMODE', 'No');
+        $vch->addChild('RESETIRNQRCODE', 'No');
+
+        // Alter and master IDs
+        $vch->addChild('ALTERID', '2');
+        $vch->addChild('MASTERID', '2');
+        $vch->addChild('VOUCHERKEY', '194914205827088');
+        $vch->addChild('VOUCHERRETAINKEY', '1');
+        $vch->addChild('VOUCHERNUMBERSERIES', 'Default');
+
+        // Empty list elements
+        $emptyLists = [
+            'EWAYBILLDETAILS',
+            'EXCLUDEDTAXATIONS',
+            'OLDAUDITENTRIES',
+            'ACCOUNTAUDITENTRIES',
+            'AUDITENTRIES',
+            'DUTYHEADDETAILS',
+            'GSTADVADJDETAILS',
+            'CONTRITRANS',
+            'EWAYBILLERRORLIST',
+            'IRNERRORLIST',
+            'HARYANAVAT',
+            'SUPPLEMENTARYDUTYHEADDETAILS',
+            'INVOICEDELNOTES',
+            'INVOICEORDERLIST',
+            'INVOICEINDENTLIST',
+            'ATTENDANCEENTRIES',
+            'ORIGINVOICEDETAILS',
+            'INVOICEEXPORTLIST'
+
+        ];
+
+        foreach ($emptyLists as $listName) {
+            $vch->addChild($listName . '.LIST', ' ');
+        }
+
+        // First ALLLEDGERENTRIES.LIST
+        $allLedgerEntries1 = $vch->addChild('ALLLEDGERENTRIES.LIST');
+        $oldAuditEntryIds1 = $allLedgerEntries1->addChild('OLDAUDITENTRYIDS.LIST');
+        $oldAuditEntryIds1->addAttribute('TYPE', 'Number');
+        $oldAuditEntryIds1->addChild('OLDAUDITENTRYIDS', '-1');
+
+        $allLedgerEntries1->addChild('APPROPRIATEFOR', $escapedDecoded . ' Not Applicable');
+        $allLedgerEntries1->addChild('LEDGERNAME', $row['client_fullname']);
+        $allLedgerEntries1->addChild('GSTCLASS', $escapedDecoded . ' Not Applicable');
+
+        // More attributes and child elements for the first ALLLEDGERENTRIES.LIST
+        $ledgerFlags1 = [
+            'ISDEEMEDPOSITIVE',
+            'LEDGERFROMITEM',
+            'REMOVEZEROENTRIES',
+            'ISPARTYLEDGER',
+            'GSTOVERRIDDEN',
+            'ISGSTASSESSABLEVALUEOVERRIDDEN',
+            'STRDISGSTAPPLICABLE',
+            'STRDGSTISPARTYLEDGER',
+            'STRDGSTISDUTYLEDGER',
+            'CONTENTNEGISPOS',
+            'ISLASTDEEMEDPOSITIVE',
+            'ISCAPVATTAXALTERED',
+            'ISCAPVATNOTCLAIMED'
+
+        ];
+
+        foreach ($ledgerFlags1 as $flag) {
+            $allLedgerEntries1->addChild($flag, 'No');
+        }
+
+        $allLedgerEntries1->addChild('ISPARTYLEDGER', 'Yes');
+        $allLedgerEntries1->addChild('AMOUNT', $row['payment_amount']);
+
+        // Empty list elements for first ALLLEDGERENTRIES.LIST
+        $emptyLists1 = [
+            'SERVICETAXDETAILS',
+            'BANKALLOCATIONS',
+        ];
+        
+        foreach ($emptyLists1 as $listName) {
+            $allLedgerEntries1->addChild($listName . '.LIST', '');
+        }
+
+        // BILLALLOCATIONS.LIST for first ALLLEDGERENTRIES.LIST
+        $billAllocations1 = $allLedgerEntries1->addChild('BILLALLOCATIONS.LIST');
+        $billAllocations1->addChild('NAME', $name);
+        $billAllocations1->addChild('BILLTYPE', $billType_receipt);
+        $billAllocations1->addChild('TDSDEDUCTEEISSPECIALRATE', 'No');
+        $billAllocations1->addChild('AMOUNT', $row['payment_amount']);
+
+        // Empty list elements for BILLALLOCATIONS.LIST
+        $emptyLists2 = [
+            'INTERESTCOLLECTION',
+            'STBILLCATEGORIES',
+        ];
+        foreach ($emptyLists2 as $listName) {
+            $billAllocations1->addChild($listName . '.LIST', ' ');
+        }
+
+        $emptyLists3 = [
+            'INTERESTCOLLECTION',
+            'OLDAUDITENTRIES',
+            'ACCOUNTAUDITENTRIES',
+            'AUDITENTRIES',
+            'INPUTCRALLOCS',
+            'DUTYHEADDETAILS',
+            'EXCISEDUTYHEADDETAILS',
+            'RATEDETAILS',
+            'SUMMARYALLOCS',
+            'CENVATDUTYALLOCATIONS',
+            'STPYMTDETAILS',
+            'EXCISEPAYMENTALLOCATIONS',
+            'TAXBILLALLOCATIONS',
+            'TAXOBJECTALLOCATIONS',
+            'TDSEXPENSEALLOCATIONS',
+            'VATSTATUTORYDETAILS',
+            'COSTTRACKALLOCATIONS',
+            'REFVOUCHERDETAILS',
+            'INVOICEWISEDETAILS',
+            'VATITCDETAILS',
+            'ADVANCETAXDETAILS',
+            'TAXTYPEALLOCATIONS'
+        ];
+
+        foreach ($emptyLists3 as $listName) {
+            $allLedgerEntries1->addChild($listName . '.LIST', ' ');
+        }
+
+        // Second ALLLEDGERENTRIES.LIST (for dynamic payment modes)
+        $allLedgerEntries2 = $vch->addChild('ALLLEDGERENTRIES.LIST');
+
+        // OLDAUDITENTRYIDS.LIST with TYPE attribute
+        $oldAuditEntryIds2 = $allLedgerEntries2->addChild('OLDAUDITENTRYIDS.LIST');
+        $oldAuditEntryIds2->addAttribute('TYPE', 'Number');
+        $oldAuditEntryIds2->addChild('OLDAUDITENTRYIDS', '-1');
+
+        // Adding the Ledger Name (dynamic based on payment mode)
+        $allLedgerEntries2->addChild('LEDGERNAME', htmlspecialchars($row['payment_mode'], ENT_QUOTES, 'UTF-8'));
+
+        // Adding GST Class
+        $allLedgerEntries2->addChild('GSTCLASS', $escapedDecoded . ' Not Applicable');
+
+        // Adding other flags and attributes
+        $allLedgerEntries2->addChild('ISDEEMEDPOSITIVE', $row['payment_amount'] < 0 ? 'No' : 'Yes');
+        $allLedgerEntries2->addChild('LEDGERFROMITEM', 'No');
+        $allLedgerEntries2->addChild('REMOVEZEROENTRIES', 'No');
+        $allLedgerEntries2->addChild('ISPARTYLEDGER', 'Yes');
+        $allLedgerEntries2->addChild('GSTOVERRIDDEN', 'No');
+        $allLedgerEntries2->addChild('ISGSTASSESSABLEVALUEOVERRIDDEN', 'No');
+        $allLedgerEntries2->addChild('STRDISGSTAPPLICABLE', 'No');
+        $allLedgerEntries2->addChild('STRDGSTISPARTYLEDGER', 'No');
+        $allLedgerEntries2->addChild('STRDGSTISDUTYLEDGER', 'No');
+        $allLedgerEntries2->addChild('CONTENTNEGISPOS', 'No');
+        $allLedgerEntries2->addChild('ISLASTDEEMEDPOSITIVE', $row['payment_amount'] < 0 ? 'No' : 'Yes');
+        $allLedgerEntries2->addChild('ISCAPVATTAXALTERED', 'No');
+        $allLedgerEntries2->addChild('ISCAPVATNOTCLAIMED', 'No');
+
+        // Amount of the transaction (dynamic based on payment amount)
+        $amount = $row['payment_amount'];
+        $allLedgerEntries2->addChild('AMOUNT', $amount < 0 ? $amount : number_format($amount, 2, '.', ''));
+
+        // Additional fields specific to cheque transactions
+        if (strtolower($row['payment_mode']) === 'cheque') {
+            $allLedgerEntries2->addChild('CHEQUENUMBER', htmlspecialchars($row['cheque_number'], ENT_QUOTES, 'UTF-8'));
+            $allLedgerEntries2->addChild('CHEQUEDATE', htmlspecialchars($row['cheque_date'], ENT_QUOTES, 'UTF-8'));
+            $allLedgerEntries2->addChild('CHEQUEBANKNAME', htmlspecialchars($row['cheque_bank'], ENT_QUOTES, 'UTF-8'));
+        }
+
+        // Empty lists specific to this entry
+        $emptyLists3 = [
+            'SERVICETAXDETAILS',
+            'BANKALLOCATIONS',
+            'BILLALLOCATIONS',
+            'INTERESTCOLLECTION',
+            'OLDAUDITENTRIES',
+            'ACCOUNTAUDITENTRIES',
+            'AUDITENTRIES',
+            'INPUTCRALLOCS',
+            'DUTYHEADDETAILS',
+            'EXCISEDUTYHEADDETAILS',
+            'RATEDETAILS',
+            'SUMMARYALLOCS',
+            'CENVATDUTYALLOCATIONS',
+            'STPYMTDETAILS',
+            'EXCISEPAYMENTALLOCATIONS',
+            'TAXBILLALLOCATIONS',
+            'TAXOBJECTALLOCATIONS',
+            'TDSEXPENSEALLOCATIONS',
+            'VATSTATUTORYDETAILS',
+            'COSTTRACKALLOCATIONS',
+            'REFVOUCHERDETAILS',
+            'INVOICEWISEDETAILS',
+            'VATITCDETAILS',
+            'ADVANCETAXDETAILS',
+            'TAXTYPEALLOCATIONS'
+        ];
+
+        // Add empty lists for this ledger entry
+        foreach ($emptyLists3 as $listName) {
+            $allLedgerEntries2->addChild($listName . '.LIST', ' ');
+        }
+
+// // Adding BILLALLOCATIONS.LIST for the cheque entry
+        // $billAllocations2 = $allLedgerEntries2->addChild('BILLALLOCATIONS.LIST');
+        // $billAllocations2->addChild('NAME', $name); // Assuming the name is the same as defined earlier
+        // $billAllocations2->addChild('BILLTYPE', $billType_receipt); // Assuming this is a receipt type
+        // $billAllocations2->addChild('TDSDEDUCTEEISSPECIALRATE', 'No'); // TDS not applicable
+        // $billAllocations2->addChild('AMOUNT', $row['payment_amount']); // The amount deducted by cheque
+
+        // // Empty lists specific to this bill allocation
+        // $emptyLists4 = ['INTERESTCOLLECTION', 'STBILLCATEGORIES'];
+        // foreach ($emptyLists4 as $listName) {
+        //     $billAllocations2->addChild($listName . '.LIST', ' ');
+        // }
+
+
+        // Final empty list elements
+        $finalEmptyLists = [
+            'GST',
+            'STKJRNLADDLCOSTDETAILS',
+            'PAYROLLMODEOFPAYMENT',
+            'ATTDRECORDS',
+            'GSTEWAYCONSIGNORADDRESS',
+            'GSTEWAYCONSIGNEEADDRESS',
+            'TEMPGSTRATEDETAILS',
+            'TEMPGSTADVADJUSTED',
+            'GSTBUYERADDRESS',
+            'GSTCONSIGNEEADDRESS'
+        ];
+
+        foreach ($finalEmptyLists as $listName) {
+            $vch->addChild($listName . '.LIST', ' ');
+        }
+    }
+    
+
+    // Output or save the XML
+    
+    
+}
+
+catch (PDOException $e) {
+    die("Database Connection failed: " . $e->getMessage());
+}
 
 
 // Output the XML

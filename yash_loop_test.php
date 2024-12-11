@@ -1,7 +1,10 @@
 <?php
 
-
-// code
+// Database connection
+$host = 'localhost';
+$dbname = 'Tallydb';
+$username = 'postgres';
+$password = '12345678';
 
 $voucherNumber1 = "1";
 $voucherNumber2 = "2";
@@ -44,88 +47,6 @@ $guID = "00000001";
 $reportName = "Yash";
 $receipt_narration = "Yash Chavan payed 10,000 by cheque to banquet easy";  
 
-// Database connection
-$host = 'localhost';
-$dbname = 'demo';
-$username = 'postgres';
-$password = 'krisha';
-
-// Set your variables
-$banquet_id = 1176;
-$client_id = 116784;
-$default_booking_id = 54372;
-
-try {
-
-
-    // Create PDO instance and connect to database
-    $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    // Query 1: Fetch Booking Details
-    $stmt1 = $pdo->prepare("SELECT 
-                                clients.fullname, 
-                                bookings.total_paid, 
-                                bookings.datex,
-                                bookings.id AS booking_id
-                            FROM bookings
-                            JOIN clients ON bookings.client = clients.id
-                            WHERE bookings.banquet = :banquet_id
-                            AND bookings.total_paid != 0
-                            AND bookings.client = :client_id");
-    $stmt1->execute([':banquet_id' => $banquet_id, ':client_id' => $client_id]);
-    $result1 = $stmt1->fetch(PDO::FETCH_ASSOC);
-
-    // Use the booking ID from the first query or the default if null
-    $booking_id = $result1 ? $result1['booking_id'] : $default_booking_id;
-
-    // Query 2: Detailed Bill Amount Calculation
-    $stmt2 = $pdo->prepare("SELECT
-                                cl.fullname AS client_fullname,
-                                bk.reg_date AS event_date,
-                                SUM(
-                                    (CASE
-                                        WHEN m.id = 1 THEN bk.pax * bb.rate
-                                        ELSE
-                                            CASE
-                                                WHEN bb.perhead = 0 THEN bb.rate
-                                                ELSE bb.rate * bb.pax
-                                            END
-                                    END)
-                                ) AS total_bill_amount
-                            FROM
-                                public.bookings bk
-                            JOIN
-                                public.booking_breakups bb ON bk.id = bb.bookingid
-                            JOIN
-                                public.monopolies m ON m.id = bb.monopoly
-                            JOIN
-                                public.clients cl ON cl.id = bk.client
-                            WHERE
-                                bk.id = :booking_id
-                            GROUP BY
-                                cl.fullname, bk.reg_date
-                            ORDER BY
-                                bk.reg_date DESC");
-
-    $stmt2->execute([':booking_id' => $booking_id]);
-    $result2 = $stmt2->fetch(PDO::FETCH_ASSOC);
-
-    // Update dynamic values from query results
-    if ($result1) {
-        // Convert datex from database to YYYYMMDD format
-        $originalDate = $result1['datex'];
-        $date = DateTime::createFromFormat('Y-m-d', $originalDate)->format('Ymd');
-    } else {
-        $date = "20240401"; // Default date
-    }
-
-    if ($result2) {
-        $total_sales_amount = -$result2['total_bill_amount'];
-        $partyName = $result2['client_fullname'];
-    } else {
-        $total_sales_amount = "-25000.00";
-    }
 
 
 // Create the initial XML structure
@@ -151,6 +72,120 @@ $staticVariables->addChild('SVCURRENTCOMPANY', 'ABC Pvt Ltd');
 
 // Add REQUESTDATA node
 $requestData = $importData->addChild('REQUESTDATA');
+
+
+try {
+    // Create a PostgreSQL database connection
+    $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Prepare SQL query to fetch data from bookings table
+    $stmt = $pdo->prepare("
+        SELECT 
+            b.id AS booking_id,
+            b.reg_date AS booking_date,
+            c.id AS client_id,
+            c.fullname AS client_name,
+            b.total AS total_amount
+        FROM 
+            public.bookings b
+        INNER JOIN 
+            public.clients c ON b.client = c.id
+        WHERE 
+            b.reg_date BETWEEN '2024-10-01 00:00:00' AND '2024-12-05 00:00:00'
+            AND b.banquet = 1176
+        ORDER BY 
+            b.reg_date DESC
+        LIMIT 3;
+    ");
+
+    // Execute the query
+    $stmt->execute();
+
+    // Fetch all rows from the query result
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // If no rows are found, throw an exception
+    if (empty($rows)) {
+        throw new Exception("No data found in the database.");
+    }
+
+    // -------------------------------------------- main loop
+    // Iterate through the result set and generate Tally XML nodes
+    foreach ($rows as $row) {
+
+
+        // Sales
+
+try {
+    // Create PDO instance and connect to database
+    $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Query 1: Fetch Booking Details
+    $stmt1 = $pdo->prepare("SELECT 
+                                clients.fullname, 
+                                bookings.total_paid, 
+                                bookings.datex,
+                                bookings.id AS booking_id
+                            FROM bookings
+                            JOIN clients ON bookings.client = clients.id
+                            WHERE bookings.banquet = :banquet_id
+                            AND bookings.total_paid != 0
+                            AND bookings.client = :client_id");
+    $stmt1->execute([':banquet_id' => 1176, ':client_id' => 140001]);
+    $result1 = $stmt1->fetch(PDO::FETCH_ASSOC);
+
+    // Query 2: Detailed Bill Amount Calculation
+    $stmt2 = $pdo->prepare("SELECT
+                                cl.fullname AS client_fullname,
+                                bk.reg_date AS event_date,
+                                SUM(
+                                    (CASE
+                                        WHEN m.id = 1 THEN bk.pax * bb.rate
+                                        ELSE
+                                            CASE
+                                                WHEN bb.perhead = 0 THEN bb.rate
+                                                ELSE bb.rate * bb.pax
+                                            END
+                                    END)
+                                ) AS total_bill_amount
+                            FROM
+                                public.bookings bk
+                            JOIN
+                                public.booking_breakups bb ON bk.id = bb.bookingid
+                            JOIN
+                                public.monopolies m ON m.id = bb.monopoly
+                            JOIN
+                                public.clients cl ON    cl.id = bk.client
+                            WHERE
+                                bk.id = :booking_id
+                            GROUP BY
+                                cl.fullname, bk.reg_date
+                            ORDER BY
+                                bk.reg_date DESC");
+
+    $stmt2->execute([':booking_id' => $result1 ? $result1['booking_id'] : 140001]);
+    $result2 = $stmt2->fetch(PDO::FETCH_ASSOC);
+
+    // Update dynamic values from query results
+    if ($result1) {
+        // Convert datex from database to YYYYMMDD format
+        $originalDate = $result1['datex'];
+        $date = DateTime::createFromFormat('Y-m-d', $originalDate)->format('Ymd');
+    } else {
+        $date = "20240401";  // Default date
+    }
+
+    if ($result2) {
+
+        $total_sales_amount = -$result2['total_bill_amount'];
+        $partyName = $result2['client_fullname'];
+    } else {
+        $total_sales_amount = "-25000.00";
+    }
+
+
 
 // Start of the Sales voucher of 25,000
 $tallyMessage = $requestData->addChild('TALLYMESSAGE');
@@ -322,7 +357,8 @@ try {
 
     // Prepare and execute the query
     $stmt = $pdo->prepare($sql);
-    $stmt->bindParam(':booking_id', $default_booking_id, PDO::PARAM_INT);
+    $stmt->bindParam(':booking_id', $booking_id, PDO::PARAM_INT);
+    $booking_id = 47987; // The booking ID you are interested in
     $stmt->execute();
     
     // Fetch the data
@@ -330,7 +366,7 @@ try {
 
     if (empty($results)) {
         // Handle case where no data is returned
-        die("No data found for booking ID: $default_booking_id");
+        die("No data found for booking ID: $booking_id");
     }
 
 } catch (PDOException $e) {
@@ -534,6 +570,8 @@ foreach ($results as $result) {
         $ledgerEntries ->addChild($listName, ' '); // Adding each tag with an empty string as its value
         }
 
+
+
     $emptylists3 = [
     'GST.LIST', 
     'STKJRNLADDLCOSTDETAILS.LIST',
@@ -578,10 +616,8 @@ try {
           INNER JOIN
             public.clients c ON b.client = c.id
         WHERE
-            bp.booking = :booking_id;
+            bp.booking = 47987 -- OR c.fullname ILIKE '%aashay%';
     ");
-
-    $stmt->bindParam(':booking_id', $default_booking_id, PDO::PARAM_INT);
 
     // Execute the query
     $stmt->execute();
@@ -739,6 +775,9 @@ try {
         $vch->addChild('ISGSTREFUND', 'No');
         $vch->addChild('OVRDNEWAYBILLAPPLICABILITY', 'No');
         $vch->addChild('ISVATPRINCIPALACCOUNT', 'No');
+
+
+
 
         // Additional status and configuration flags
         $statusFlags = [
@@ -1052,5 +1091,13 @@ echo $xml->asXML();
     die("Error: " . $e->getMessage());
 } finally {
     $conn = null;
+}
+    }    // main loop
+} catch (PDOException $e) {
+    // Handle database connection or query errors
+    echo "Database error: " . $e->getMessage();
+} catch (Exception $e) {
+    // Handle any other errors
+    echo "Error: " . $e->getMessage();
 }
 ?>
