@@ -45,8 +45,8 @@ Before you begin, ensure that you have the following installed:
 Start by cloning this repository to your local machine:
 
 ```bash
-git clone https://github.com/yourusername/banquet-easy-tally-integration.git
-cd banquet-easy-tally-integration
+git clone https://github.com/yourusername/Tally_Banquet_Easy_Project.git
+cd Tally_Banquet_Easy_Project
 ```
 
 ### **2. Set Up Database Connection**
@@ -81,7 +81,7 @@ Make sure the XAMPP services (Apache and PostgreSQL) are running to execute the 
 Once everything is set up, access the script by navigating to:
 
 ```bash
-http://localhost/banquet-easy-tally-integration/index.php
+http://localhost/Tally_Banquet_Easy_Project/main.php
 ```
 
 ### **6. Usage Instructions**
@@ -89,7 +89,7 @@ http://localhost/banquet-easy-tally-integration/index.php
 #### **Step-by-Step Guide**
 
 1. **Enter Date Range**:  
-   - Navigate to the script in your browser (`http://localhost/banquet-easy-tally-integration/index.php`) and enter the start and end dates for the bookings you want to extract.
+   - Navigate to the script in your browser (`http://localhost/Tally_Banquet_Easy_Project/main.php`) and enter the start and end dates for the bookings you want to extract.
    - The format for dates should be **YYYY-MM-DD** (e.g., `2024-01-01` to `2024-01-31`).
 
 2. **Run the Extraction**:  
@@ -106,7 +106,7 @@ http://localhost/banquet-easy-tally-integration/index.php
 You can also manually input the date range by specifying the start and end dates in the URL:
 
 ```bash
-http://localhost/banquet-easy-tally-integration/index.php?start_date=2024-01-01&end_date=2024-01-31
+http://localhost/Tally_Banquet_Easy_Project/main.php?start_date=2024-01-01&end_date=2024-01-31
 ```
 
 ### **7. How the Script Works**
