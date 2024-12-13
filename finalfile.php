@@ -1,8 +1,5 @@
 <?php
 // code
-
-$voucherNumber1 = "1";
-$voucherNumber2 = "2";
 $companyName = "ABC Pvt Ltd";
 $gstRegistrationType = "Regular";
 $gstRegistration = "ABC Pvt Ltd";
@@ -10,56 +7,41 @@ $country = "India";
 $sales_narration = "This is the Bill that Yash Chavan has to pay to Banquet Easy";
 $special = "&#4;"; // The HTML entity
 $decoded = html_entity_decode($special, ENT_QUOTES, 'UTF-8'); // Decode the entity
-$stock_item_1 = "Room Rent";
-$room_rent_amount = "10000.00";
 $ledger_name = "Banquet Sales";
-$stock_item_2 = "Other Charges";
-$amount_2 = "15000.00";
+$total_sales_amount = "0";
 $bill_type = "New Ref";
-$total_sales_amount = "-25000.00";
 
-
+//Dynamic data for receipt 
+$voucher_receipt_id = "00000002";
+$voucher_receipt_Key = "00000004";
+$guId_receipt = "00000002";
+$billType_receipt = "Agst Ref";
+$amount_receipt = "0";
+$amount_minus_receipt = "0";
 
 $counter = 1;
-$counter1 = 10;
+$counter1 = 4;
 $updater = 1;
-
+$sales_voucherNumber = 1;
+$receipt_voucherNumber = 1;
 
 $prefix1 = 'ef1532b1-c551-4b3f-ac45-04402e1668cc-';
 $prefix2 = 'ef1532b1-c551-4b3f-ac45-04402e1668cc-0000b146:';
-
-
-
-
-$billType_receipt = "Agst Ref";
-$amount_receipt = "10000.00";
-$amount_minus_receipt = "-10000.00";
 
 // Escape special characters to be safe in XML context
 $escapedDecoded = htmlspecialchars($decoded, ENT_QUOTES, 'UTF-8');
 
 // Dynamic data (You can change these values as per your requirement)
-
 $voucherType = "sales";
 $billType = "New Ref";
+$name = 'BQ-1';
 $ledgerName = "Banquet Sales";
-$voucher_ID = "00000001";
-$voucher_Key = "00000002";
-$guID = "00000001";
-$reportName = "Yash";
-$receipt_narration = "Yash Chavan payed 10,000 by cheque to banquet easy";  
 
 // Database connection
 $host = 'localhost';
 $dbname = 'Tallydb';
 $username = 'postgres';
 $password = '12345678';
-
-// // Set your variables
-// $banquet_id = 1176;
-// $client_id = 116784;
-// $default_booking_id = 54372;
-
 
 $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><ENVELOPE></ENVELOPE>');
 
@@ -84,8 +66,11 @@ $staticVariables->addChild('SVCURRENTCOMPANY', 'ABC Pvt Ltd');
 // Add REQUESTDATA node
 $requestData = $importData->addChild('REQUESTDATA');
 
-
+$banquetID = 1176;
 try {
+
+    //SALES VOUCHER 
+    
     // Create a PostgreSQL database connection
     $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -104,12 +89,15 @@ try {
         INNER JOIN 
             public.clients c ON b.client = c.id
         WHERE 
-            b.reg_date BETWEEN '2024-11-01 00:00:00' AND '2024-11-18 00:00:00'
-            AND b.banquet = 1176
+            b.reg_date BETWEEN '2024-11-17 00:00:00' AND '2024-11-19 00:00:00'
+            AND b.banquet = :banquetID
         ORDER BY 
             b.reg_date DESC
-        LIMIT 10;
+        LIMIT 3;
     ");
+
+    // Bind the global banquet_id to the query
+    $stmt->bindParam(':banquetID', $banquetID, PDO::PARAM_INT);
 
     // Execute the query
     $stmt->execute();
@@ -128,12 +116,9 @@ try {
         $client_id = $row['client_id'];
         $default_booking_id = $row['booking_id'];
         $partyName = $row['client_name'];
-
         $name = "BQ-" . $client_id;
 
 try {
-
-
     // Create PDO instance and connect to database
     $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -200,27 +185,20 @@ try {
         $total_sales_amount = -$result2['total_bill_amount'];
         $partyName = $result2['client_fullname'];
     } else {
-        $total_sales_amount = 0;
+        $total_sales_amount = "-25000.00";
     }
 
-
-
-
-// Start of the Sales voucher of 25,000
+// Start of the Sales voucher
 $tallyMessage = $requestData->addChild('TALLYMESSAGE');
 $tallyMessage->addAttribute('xmlns:UDF', 'TallyUDF');
 
 // Add VOUCHER node
 $vch = $tallyMessage->addChild('VOUCHER');
 
-
 $voucher_receipt_id = $prefix1 . str_pad($counter, 8, '0', STR_PAD_LEFT);
 $voucher_receipt_key = $prefix2 . str_pad($counter1, 8, '0', STR_PAD_LEFT);
 
-
-
 $vch->addAttribute('REMOTEID', $voucher_receipt_id);
-
 $vch->addAttribute('VCHKEY', $voucher_receipt_key);
 
 $vch->addAttribute('VCHTYPE', 'Sales');
@@ -250,7 +228,10 @@ $gstRegistrationNode->addAttribute('TAXREGISTRATION', '');
 
 $vch->addChild('VOUCHERTYPENAME', 'Sales');
 $vch->addChild('PARTYLEDGERNAME', $partyName);
-$vch->addChild('VOUCHERNUMBER', $voucherNumber1);
+
+$vch->addChild('VOUCHERNUMBER', $sales_voucherNumber);
+$sales_voucherNumber++;
+
 $vch->addChild('BASICBUYERNAME', $partyName);
 $vch->addChild('CMPGSTREGISTRATIONTYPE', $gstRegistrationType);
 $vch->addChild('PARTYMAILINGNAME', $partyName);
@@ -362,13 +343,11 @@ foreach ($emptyLists as $listName) {
 $counter++;
 $counter1++;
 
-
-
 try {
 
     // Query to fetch the required data
     $sql = "
-    SELECT
+        SELECT
 			CASE
 		        WHEN bm.tally_ledger_name IS NOT NULL THEN bm.tally_ledger_name
 		        ELSE m.monopoly
@@ -377,7 +356,8 @@ try {
                 WHEN m.id = 1 THEN bb.pax * bb.rate
                 WHEN bb.perhead = 0 THEN bb.rate
                 ELSE bb.rate * bb.pax
-            END AS total_amount
+            END AS total_amount,
+			bm.tally_ledger_name as ledger
         FROM
             public.booking_breakups bb
         JOIN
@@ -389,7 +369,7 @@ try {
 		JOIN 
 			banquet_monopolies bm on bm.monopoly = m.id and bm.banquet = bk.banquet
         WHERE
-            bk.id = :booking_id
+            bk.id = :booking_id;
     ";
 
     // Prepare and execute the query
@@ -624,6 +604,7 @@ foreach ($emptylists3 as $listName) {
     $vch->addChild($listName , ' ');
 }
 
+
 try {
     // Create a PostgreSQL database connection
     $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
@@ -662,9 +643,9 @@ try {
     // Fetch all rows
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // // If no rows found, throw an exception
+    // If no rows found, throw an exception
     // if (empty($rows)) {
-    //     break;
+    //     throw new Exception("No data found in the database");
     // }
 
     // Format dates and process rows
@@ -701,8 +682,16 @@ try {
 
         // Add VOUCHER node
         $vch = $tallyMessage->addChild('VOUCHER');
+
+        $voucher_receipt_id = $prefix1 . str_pad($counter, 8, '0', STR_PAD_LEFT);
+        $voucher_receipt_key = $prefix2 . str_pad($counter1, 8, '0', STR_PAD_LEFT);
+
         $vch->addAttribute('REMOTEID', $voucher_receipt_id);
-        $vch->addAttribute('VCHKEY', $voucher_receipt_Key);
+        $vch->addAttribute('VCHKEY', $voucher_receipt_key);
+
+        $counter++;
+        $counter1++;
+
         $vch->addAttribute('VCHTYPE', 'Receipt');
         $vch->addAttribute('ACTION', 'Create');
         $vch->addAttribute('OBJVIEW', 'Accounting Voucher View');
@@ -716,7 +705,9 @@ try {
         // Adding other elements from original script
         $vch->addChild('DATE', $row['payment_date']);
         $vch->addChild('VCHSTATUSDATE', $row['payment_date']);
+
         $vch->addChild('GUID', $voucher_receipt_id);
+
         $vch->addChild('NARRATION', "Receipt ID: " . $row['receipt_id']);
 
         // Adding GSTREGISTRATION with additional attributes
@@ -727,7 +718,10 @@ try {
         // Add additional fields related to the voucher
         $vch->addChild('VOUCHERTYPENAME', 'Receipt');
         $vch->addChild('PARTYLEDGERNAME', $row['client_fullname']);
-        $vch->addChild('VOUCHERNUMBER', $voucherNumber2);
+
+        $vch->addChild('VOUCHERNUMBER', $receipt_voucherNumber);
+        $receipt_voucherNumber++;
+
         $vch->addChild('CMPGSTREGISTRATIONTYPE', 'Regular');
         $vch->addChild('NUMBERINGSTYLE', 'Auto Retain');
         $vch->addChild('CSTFORMISSUETYPE', $escapedDecoded . ' Not Applicable');
@@ -1029,7 +1023,7 @@ try {
 
         // Amount of the transaction (dynamic based on payment amount)
         $amount = $row['payment_amount'];
-        $allLedgerEntries2->addChild('AMOUNT', $amount < 0 ? $amount : number_format($amount, 2, '.', ''));
+        $allLedgerEntries2->addChild('AMOUNT', '-' . $amount);
 
         // Additional fields specific to cheque transactions
         if (strtolower($row['payment_mode']) === 'cheque') {
@@ -1103,7 +1097,10 @@ try {
         foreach ($finalEmptyLists as $listName) {
             $vch->addChild($listName . '.LIST', ' ');
         }
-    }    
+    }
+    
+
+    // Output or save the XML
     
 }
 
@@ -1121,11 +1118,9 @@ catch (PDOException $e) {
 } finally {
     $conn = null;
 }
+ 
 
-    $counter++;
-    $counter1++;
-
-
+// $receipt_voucherNumber++;
 }
 }catch (PDOException $e) {
     // Handle database connection or query errors
@@ -1134,7 +1129,6 @@ catch (PDOException $e) {
     // Handle any other errors
     echo "Error: " . $e->getMessage();
 }
-
 
 
 // Output the XML
