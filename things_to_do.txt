@@ -1,0 +1,51 @@
+- remote id and voucher keys global variable
+- ledger mapping column in database
+
+
+// how to code logic works
+date {
+    sales - booking id
+    split - booking id 
+    if(id) {
+    receipt - booking id
+    }
+}
+
+
+// tally format
+tallymessage
+sales - client 1
+/tallymessage
+
+tallymessage
+sales - client 2
+/tallymessage
+
+tallymessage
+receipt - client 2
+/tallymessage
+
+
+
+
+// Unique Identifier
+Sachin Tendulkar - 2012
+New Ref - BQ-1
+Agf Ref - BQ-1
+
+Sachin Tendulkar - 2023
+New Ref - BQ-2
+Agf Ref - BQ-212121
+
+
+
+
+
+sales - 2
+counter
+receipts
+
+end
+
+sales - updated
+

@@ -1,6 +1,4 @@
 <?php
-
-
 // code
 
 $voucherNumber1 = "1";
@@ -17,14 +15,22 @@ $room_rent_amount = "10000.00";
 $ledger_name = "Banquet Sales";
 $stock_item_2 = "Other Charges";
 $amount_2 = "15000.00";
-$total_sales_amount = "-25000.00";
-$name = "BQ-1";
 $bill_type = "New Ref";
+$total_sales_amount = "-25000.00";
 
-//Dynamic data for receipt 
-$voucher_receipt_id = "00000002";
-$voucher_receipt_Key = "00000004";
-$guId_receipt = "00000002";
+
+
+$counter = 1;
+$counter1 = 10;
+$updater = 1;
+
+
+$prefix1 = 'ef1532b1-c551-4b3f-ac45-04402e1668cc-';
+$prefix2 = 'ef1532b1-c551-4b3f-ac45-04402e1668cc-0000b146:';
+
+
+
+
 $billType_receipt = "Agst Ref";
 $amount_receipt = "10000.00";
 $amount_minus_receipt = "-10000.00";
@@ -36,7 +42,6 @@ $escapedDecoded = htmlspecialchars($decoded, ENT_QUOTES, 'UTF-8');
 
 $voucherType = "sales";
 $billType = "New Ref";
-$name = 'BQ-1';
 $ledgerName = "Banquet Sales";
 $voucher_ID = "00000001";
 $voucher_Key = "00000002";
@@ -50,10 +55,10 @@ $dbname = 'Tallydb';
 $username = 'postgres';
 $password = '12345678';
 
-// Set your variables
-$banquet_id = 1176;
-$client_id = 116784;
-$default_booking_id = 54372;
+// // Set your variables
+// $banquet_id = 1176;
+// $client_id = 116784;
+// $default_booking_id = 54372;
 
 
 $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><ENVELOPE></ENVELOPE>');
@@ -92,17 +97,18 @@ try {
             b.reg_date AS booking_date,
             c.id AS client_id,
             c.fullname AS client_name,
+            b.banquet AS banquet_id,
             b.total AS total_amount
         FROM 
             public.bookings b
         INNER JOIN 
             public.clients c ON b.client = c.id
         WHERE 
-            b.reg_date BETWEEN '2024-10-01 00:00:00' AND '2024-12-05 00:00:00'
+            b.reg_date BETWEEN '2024-11-01 00:00:00' AND '2024-11-18 00:00:00'
             AND b.banquet = 1176
         ORDER BY 
             b.reg_date DESC
-            LIMIT 5;
+        LIMIT 10;
     ");
 
     // Execute the query
@@ -117,6 +123,13 @@ try {
     }
 
     foreach ($rows as $row) {
+
+        $banquet_id = $row['banquet_id'];
+        $client_id = $row['client_id'];
+        $default_booking_id = $row['booking_id'];
+        $partyName = $row['client_name'];
+
+        $name = "BQ-" . $client_id;
 
 try {
 
@@ -187,8 +200,9 @@ try {
         $total_sales_amount = -$result2['total_bill_amount'];
         $partyName = $result2['client_fullname'];
     } else {
-        $total_sales_amount = "-25000.00";
+        $total_sales_amount = 0;
     }
+
 
 
 
@@ -198,8 +212,17 @@ $tallyMessage->addAttribute('xmlns:UDF', 'TallyUDF');
 
 // Add VOUCHER node
 $vch = $tallyMessage->addChild('VOUCHER');
-$vch->addAttribute('REMOTEID', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-'.$voucher_ID);
-$vch->addAttribute('VCHKEY', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-0000b146:'.$voucher_Key);
+
+
+$voucher_receipt_id = $prefix1 . str_pad($counter, 8, '0', STR_PAD_LEFT);
+$voucher_receipt_key = $prefix2 . str_pad($counter1, 8, '0', STR_PAD_LEFT);
+
+
+
+$vch->addAttribute('REMOTEID', $voucher_receipt_id);
+
+$vch->addAttribute('VCHKEY', $voucher_receipt_key);
+
 $vch->addAttribute('VCHTYPE', 'Sales');
 $vch->addAttribute('ACTION', 'Create');
 $vch->addAttribute('OBJVIEW', 'Invoice Voucher View');
@@ -212,7 +235,7 @@ $oldAuditEntryIdsList->addChild('OLDAUDITENTRYIDS', '-1');
 // Add core voucher details
 $vch->addChild('DATE', $date);
 $vch->addChild('VCHSTATUSDATE', $date);
-$vch->addChild('GUID', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-'.$guID);
+$vch->addChild('GUID', $voucher_receipt_id);
 $vch->addChild('GSTREGISTRATIONTYPE', $gstRegistrationType);
 $vch->addChild('VATDEALERTYPE', $gstRegistrationType);
 $vch->addChild('NARRATION', $sales_narration);
@@ -336,13 +359,20 @@ foreach ($emptyLists as $listName) {
     $vch->addChild($listName , ' ');
 }
 
+$counter++;
+$counter1++;
+
+
 
 try {
 
     // Query to fetch the required data
     $sql = "
-        SELECT
-            m.monopoly AS service_name,
+    SELECT
+			CASE
+		        WHEN bm.tally_ledger_name IS NOT NULL THEN bm.tally_ledger_name
+		        ELSE m.monopoly
+		    END AS service_name,
             CASE
                 WHEN m.id = 1 THEN bb.pax * bb.rate
                 WHEN bb.perhead = 0 THEN bb.rate
@@ -356,6 +386,8 @@ try {
             public.bookings bk ON bk.id = bb.bookingid
         JOIN
             public.clients cl ON cl.id = bk.client
+		JOIN 
+			banquet_monopolies bm on bm.monopoly = m.id and bm.banquet = bk.banquet
         WHERE
             bk.id = :booking_id
     ";
@@ -368,10 +400,11 @@ try {
     // Fetch the data
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if (empty($results)) {
-        // Handle case where no data is returned
-        die("No data found for booking ID: $default_booking_id");
-    }
+    // if (empty($results)) {
+    //     // Handle case where no data is returned
+    //     die("No data found for booking ID: $default_booking_id");
+    //     break;
+    // }
 
 } catch (PDOException $e) {
     echo "Error: " . $e->getMessage();
@@ -629,10 +662,10 @@ try {
     // Fetch all rows
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // If no rows found, throw an exception
-    if (empty($rows)) {
-        throw new Exception("No data found in the database");
-    }
+    // // If no rows found, throw an exception
+    // if (empty($rows)) {
+    //     break;
+    // }
 
     // Format dates and process rows
     foreach ($rows as &$row) {
@@ -668,8 +701,8 @@ try {
 
         // Add VOUCHER node
         $vch = $tallyMessage->addChild('VOUCHER');
-        $vch->addAttribute('REMOTEID', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-'.$voucher_receipt_id);
-        $vch->addAttribute('VCHKEY', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-0000b146:'.$voucher_receipt_Key);
+        $vch->addAttribute('REMOTEID', $voucher_receipt_id);
+        $vch->addAttribute('VCHKEY', $voucher_receipt_Key);
         $vch->addAttribute('VCHTYPE', 'Receipt');
         $vch->addAttribute('ACTION', 'Create');
         $vch->addAttribute('OBJVIEW', 'Accounting Voucher View');
@@ -683,7 +716,7 @@ try {
         // Adding other elements from original script
         $vch->addChild('DATE', $row['payment_date']);
         $vch->addChild('VCHSTATUSDATE', $row['payment_date']);
-        $vch->addChild('GUID', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-' . $guId_receipt);
+        $vch->addChild('GUID', $voucher_receipt_id);
         $vch->addChild('NARRATION', "Receipt ID: " . $row['receipt_id']);
 
         // Adding GSTREGISTRATION with additional attributes
@@ -1070,11 +1103,7 @@ try {
         foreach ($finalEmptyLists as $listName) {
             $vch->addChild($listName . '.LIST', ' ');
         }
-    }
-    
-
-    // Output or save the XML
-    
+    }    
     
 }
 
@@ -1092,6 +1121,11 @@ catch (PDOException $e) {
 } finally {
     $conn = null;
 }
+
+    $counter++;
+    $counter1++;
+
+
 }
 }catch (PDOException $e) {
     // Handle database connection or query errors
@@ -1100,6 +1134,7 @@ catch (PDOException $e) {
     // Handle any other errors
     echo "Error: " . $e->getMessage();
 }
+
 
 
 // Output the XML
