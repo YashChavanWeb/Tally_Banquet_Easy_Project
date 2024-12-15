@@ -66,7 +66,8 @@ $staticVariables->addChild('SVCURRENTCOMPANY', 'ABC Pvt Ltd');
 // Add REQUESTDATA node
 $requestData = $importData->addChild('REQUESTDATA');
 
-$banquetID = 1176;
+$banquetID = 80;  // replaceable
+
 try {
 
     //SALES VOUCHER 
@@ -89,11 +90,11 @@ try {
         INNER JOIN 
             public.clients c ON b.client = c.id
         WHERE 
-            b.reg_date BETWEEN '2024-11-17 00:00:00' AND '2024-11-19 00:00:00'
+            b.reg_date BETWEEN '2024-10-01 00:00:00' AND '2024-10-31 00:00:00' 
             AND b.banquet = :banquetID
         ORDER BY 
             b.reg_date DESC
-        LIMIT 3;
+        LIMIT 10;
     ");
 
     // Bind the global banquet_id to the query
@@ -254,7 +255,7 @@ $vch->addChild('VCHENTRYMODE', 'Item Invoice');
 $statusFlags = [
     'DIFFACTUALQTY', 'ISMSTFROMSYNC', 'ISDELETED', 'ISSECURITYONWHENENTERED', 
     'ASORIGINAL', 'AUDITED', 'ISCOMMONPARTY', 'FORJOBCOSTING', 
-    'ISOPTIONAL','EFFECTIVEDATE', 'USEFOREXCISE', 'ISFORJOBWORKIN', 'ALLOWCONSUMPTION', 
+    'ISOPTIONAL', 'EFFECTIVEDATE', 'USEFOREXCISE', 'ISFORJOBWORKIN', 'ALLOWCONSUMPTION', 
     'USEFORINTEREST', 'USEFORGAINLOSS', 'USEFORGODOWNTRANSFER', 
     'USEFORCOMPOUND', 'USEFORSERVICETAX', 'ISREVERSECHARGEAPPLICABLE', 
     'ISSYSTEM', 'ISFETCHEDONLY', 'ISGSTOVERRIDDEN', 'ISCANCELLED', 
@@ -264,7 +265,13 @@ $statusFlags = [
 ];
 
 foreach ($statusFlags as $flag) {
-    $vch->addChild($flag, 'No');
+    // Check if the flag is EFFECTIVEDATE and set it to $date
+    if ($flag == 'EFFECTIVEDATE') {
+        $vch->addChild($flag, $date);
+    } else {
+        // For all other flags, set it to 'No'
+        $vch->addChild($flag, 'No');
+    }
 }
 
 // Additional specific flags
