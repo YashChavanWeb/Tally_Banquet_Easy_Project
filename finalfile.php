@@ -743,7 +743,7 @@ try {
         $vch->addChild('ISCOMMONPARTY', 'No');
         $vch->addChild('FORJOBCOSTING', 'No');
         $vch->addChild('ISOPTIONAL', 'No');
-        $vch->addChild('EFFECTIVEDATE', $date);
+        $vch->addChild('EFFECTIVEDATE', $row['payment_date']);
         $vch->addChild('USEFOREXCISE', 'No');
         $vch->addChild('ISFORJOBWORKIN', 'No');
         $vch->addChild('ALLOWCONSUMPTION', 'No');
