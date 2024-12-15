@@ -264,8 +264,13 @@ $statusFlags = [
 ];
 
 foreach ($statusFlags as $flag) {
-    $vch->addChild($flag, 'No');
+    if ($flag === 'EFFECTIVEDATE') {
+        $vch->addChild($flag, $date); 
+    } else {
+        $vch->addChild($flag, 'No'); 
+    }
 }
+
 
 // Additional specific flags
 $vch->addChild('IRNJSONEXPORTED', 'No');
