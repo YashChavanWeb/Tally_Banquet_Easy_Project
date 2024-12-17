@@ -41,17 +41,36 @@ Agf Ref - BQ-212121
 
 
 
-sales - 2
-counter
-receipts
-
-end
-
-sales - updated
 
 
 
+## Testing in tally prime
+tallyprime install
+educational liscense
 
+- company create
+- file save in the path ThisPC/Program Files/TallyPrime
+- import - backup dest Program Files/TallyPrime
+- exceptions correct (eventlog error)
+
+back - ESC 
+navigation - keyboard
+1 Apr before date so not able to accept
+
+3 things xml format
+sales
+sales split 
+receipt
+
+name of customer - sundry debtors
+banquet sales - sales acccount
+
+
+## check
+tally import
+download
+view
+data replace-pending
 
 
 

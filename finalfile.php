@@ -43,7 +43,7 @@ $dbname = 'Tallydb';
 $username = 'postgres';
 $password = '12345678';
 
-$xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><ENVELOPE></ENVELOPE>');
+$xml = new SimpleXMLElement('<ENVELOPE></ENVELOPE>');
 
 // Add HEADER node
 $header = $xml->addChild('HEADER');
@@ -66,42 +66,52 @@ $staticVariables->addChild('SVCURRENTCOMPANY', 'ABC Pvt Ltd');
 // Add REQUESTDATA node
 $requestData = $importData->addChild('REQUESTDATA');
 
-$banquetID = 80;  // replaceable
+$banquetID = 1176;
+
+// Retrieve the values from the query string
+$banquetID = isset($_GET['banquet_id']) ? $_GET['banquet_id'] : null;
+$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : null;
+$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : null;
+
+// Ensure the form data is valid (you can add more validation as needed)
+if (!$banquetID || !$startDate || !$endDate) {
+    die('Invalid input data.');
+}
 
 try {
 
-    //SALES VOUCHER 
-    
     // Create a PostgreSQL database connection
     $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Prepare SQL query to fetch data from bookings table
-    $stmt = $pdo->prepare("
-        SELECT 
-            b.id AS booking_id,
-            b.reg_date AS booking_date,
-            c.id AS client_id,
-            c.fullname AS client_name,
-            b.banquet AS banquet_id,
-            b.total AS total_amount
-        FROM 
-            public.bookings b
-        INNER JOIN 
-            public.clients c ON b.client = c.id
-        WHERE 
-            b.reg_date BETWEEN '2024-10-01 00:00:00' AND '2024-10-31 00:00:00' 
-            AND b.banquet = :banquetID
-        ORDER BY 
-            b.reg_date DESC
-        LIMIT 1;
-    ");
+    // Prepare the database connection (assuming $pdo is already set up)
+$stmt = $pdo->prepare("
+SELECT 
+    b.id AS booking_id,
+    b.reg_date AS booking_date,
+    c.id AS client_id,
+    c.fullname AS client_name,
+    b.banquet AS banquet_id,
+    b.total AS total_amount
+FROM 
+    public.bookings b
+INNER JOIN 
+    public.clients c ON b.client = c.id
+WHERE 
+    b.reg_date BETWEEN :start_date AND :end_date
+    AND b.banquet = :banquetID
+ORDER BY 
+    b.reg_date DESC
+    LIMIT 20;
+");
 
-    // Bind the global banquet_id to the query
-    $stmt->bindParam(':banquetID', $banquetID, PDO::PARAM_INT);
+// Bind the parameters to the query
+$stmt->bindParam(':banquetID', $banquetID, PDO::PARAM_INT);
+$stmt->bindParam(':start_date', $startDate, PDO::PARAM_STR);
+$stmt->bindParam(':end_date', $endDate, PDO::PARAM_STR);
 
-    // Execute the query
-    $stmt->execute();
+// Execute the query
+$stmt->execute();
 
     // Fetch all rows from the query result
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -255,7 +265,7 @@ $vch->addChild('VCHENTRYMODE', 'Item Invoice');
 $statusFlags = [
     'DIFFACTUALQTY', 'ISMSTFROMSYNC', 'ISDELETED', 'ISSECURITYONWHENENTERED', 
     'ASORIGINAL', 'AUDITED', 'ISCOMMONPARTY', 'FORJOBCOSTING', 
-    'ISOPTIONAL', 'EFFECTIVEDATE', 'USEFOREXCISE', 'ISFORJOBWORKIN', 'ALLOWCONSUMPTION', 
+    'ISOPTIONAL','EFFECTIVEDATE', 'USEFOREXCISE', 'ISFORJOBWORKIN', 'ALLOWCONSUMPTION', 
     'USEFORINTEREST', 'USEFORGAINLOSS', 'USEFORGODOWNTRANSFER', 
     'USEFORCOMPOUND', 'USEFORSERVICETAX', 'ISREVERSECHARGEAPPLICABLE', 
     'ISSYSTEM', 'ISFETCHEDONLY', 'ISGSTOVERRIDDEN', 'ISCANCELLED', 
@@ -265,13 +275,7 @@ $statusFlags = [
 ];
 
 foreach ($statusFlags as $flag) {
-    // Check if the flag is EFFECTIVEDATE and set it to $date
-    if ($flag == 'EFFECTIVEDATE') {
-        $vch->addChild($flag, $date);
-    } else {
-        // For all other flags, set it to 'No'
-        $vch->addChild($flag, 'No');
-    }
+    $vch->addChild($flag, 'No');
 }
 
 // Additional specific flags
@@ -750,7 +754,7 @@ try {
         $vch->addChild('ISCOMMONPARTY', 'No');
         $vch->addChild('FORJOBCOSTING', 'No');
         $vch->addChild('ISOPTIONAL', 'No');
-        $vch->addChild('EFFECTIVEDATE', $row['payment_date']);
+        $vch->addChild('EFFECTIVEDATE', $date);
         $vch->addChild('USEFOREXCISE', 'No');
         $vch->addChild('ISFORJOBWORKIN', 'No');
         $vch->addChild('ALLOWCONSUMPTION', 'No');
@@ -1138,8 +1142,16 @@ catch (PDOException $e) {
 }
 
 
-// Output the XML
-header('Content-Type: application/xml; charset=utf-8');
-echo $xml->asXML();
+if (isset($_GET['download']) && $_GET['download'] == 'true') {
+    // Set headers to force download
+    header('Content-Type: application/xml');
+    header('Content-Disposition: attachment; filename="data.xml"');
+    echo $xml->asXML();
+    exit;
+} else {
+    header('Content-Type: application/xml; charset=utf-8');
+    echo $xml->asXML();
+}
+
 
 ?>
