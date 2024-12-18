@@ -100,9 +100,7 @@ INNER JOIN
 WHERE 
     b.reg_date BETWEEN :start_date AND :end_date
     AND b.banquet = :banquetID
-ORDER BY 
-    b.reg_date DESC
-    LIMIT 20;
+    LIMIT 10;
 ");
 
 // Bind the parameters to the query

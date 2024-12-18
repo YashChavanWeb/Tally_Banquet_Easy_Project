@@ -1,6 +1,5 @@
 <?php
-$voucherNumber1 = "1";
-$voucherNumber2 = "2";
+// code
 $companyName = "ABC Pvt Ltd";
 $gstRegistrationType = "Regular";
 $gstRegistration = "ABC Pvt Ltd";
@@ -8,13 +7,8 @@ $country = "India";
 $sales_narration = "This is the Bill that Yash Chavan has to pay to Banquet Easy";
 $special = "&#4;"; // The HTML entity
 $decoded = html_entity_decode($special, ENT_QUOTES, 'UTF-8'); // Decode the entity
-$stock_item_1 = "Room Rent";
-$room_rent_amount = "10000.00";
 $ledger_name = "Banquet Sales";
-$stock_item_2 = "Other Charges";
-$amount_2 = "15000.00";
-$total_sales_amount = "-25000.00";
-$name = "BQ-1";
+$total_sales_amount = "0";
 $bill_type = "New Ref";
 
 //Dynamic data for receipt 
@@ -22,23 +16,27 @@ $voucher_receipt_id = "00000002";
 $voucher_receipt_Key = "00000004";
 $guId_receipt = "00000002";
 $billType_receipt = "Agst Ref";
-$amount_receipt = "10000.00";
-$amount_minus_receipt = "-10000.00";
+$amount_receipt = "0";
+$amount_minus_receipt = "0";
+
+$counter = 1;
+$counter1 = 4;
+$receipt_voucherNumber = 1;
+$updater = 1;
+$sales_voucherNumber = 1;
+
+
+$prefix1 = 'ef1532b1-c551-4b3f-ac45-04402e1668cc-';
+$prefix2 = 'ef1532b1-c551-4b3f-ac45-04402e1668cc-0000b146:';
 
 // Escape special characters to be safe in XML context
 $escapedDecoded = htmlspecialchars($decoded, ENT_QUOTES, 'UTF-8');
 
 // Dynamic data (You can change these values as per your requirement)
-
 $voucherType = "sales";
 $billType = "New Ref";
 $name = 'BQ-1';
 $ledgerName = "Banquet Sales";
-$voucher_ID = "00000001";
-$voucher_Key = "00000002";
-$guID = "00000001";
-$reportName = "Yash";
-$receipt_narration = "Yash Chavan payed 10,000 by cheque to banquet easy";  
 
 // Database connection
 $host = 'localhost';
@@ -46,24 +44,83 @@ $dbname = 'Tallydb';
 $username = 'postgres';
 $password = '12345678';
 
+$xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><ENVELOPE></ENVELOPE>');
+
+// Add HEADER node
+$header = $xml->addChild('HEADER');
+$header->addChild('TALLYREQUEST', 'Import Data');
+
+// Add BODY node
+$body = $xml->addChild('BODY');
+
+// Add IMPORTDATA node
+$importData = $body->addChild('IMPORTDATA');
+
+// Add REQUESTDESC node
+$requestDesc = $importData->addChild('REQUESTDESC');
+$requestDesc->addChild('REPORTNAME', 'All Masters');
+
+// Add STATICVARIABLES node
+$staticVariables = $requestDesc->addChild('STATICVARIABLES');
+$staticVariables->addChild('SVCURRENTCOMPANY', 'ABC Pvt Ltd');
+
+// Add REQUESTDATA node
+$requestData = $importData->addChild('REQUESTDATA');
+
+$banquetID = 80;
+try {
+
+    //SALES VOUCHER 
+    
+    // Create a PostgreSQL database connection
+    $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Prepare SQL query to fetch data from bookings table
+    $stmt = $pdo->prepare("
+            SELECT 
+                b.id AS booking_id,
+                b.reg_date AS booking_date,
+                c.id AS client_id,
+                c.fullname AS client_name,
+                b.banquet AS banquet_id,
+                b.total AS total_amount
+            FROM 
+                public.bookings b
+            INNER JOIN 
+                public.clients c ON b.client = c.id
+            WHERE 
+                b.reg_date BETWEEN '2024-11-17 00:00:00' AND '2024-12-19 00:00:00'
+                AND b.banquet = :banquetID
+            Limit 1;    
+            ");
+
+    // Bind the global banquet_id to the query
+    $stmt->bindParam(':banquetID', $banquetID, PDO::PARAM_INT);
+
+    // Execute the query
+    $stmt->execute();
+
+    // Fetch all rows from the query result
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // If no rows are found, throw an exception
+    if (empty($rows)) {
+        throw new Exception("No data found in the database.");
+    }
+
+    foreach ($rows as $row) {
+
+        $banquet_id = $row['banquet_id'];
+        $client_id = $row['client_id'];
+        $default_booking_id = $row['booking_id'];
+        $partyName = $row['client_name'];
+        $name = "BQ-" . $client_id;
+
 try {
     // Create PDO instance and connect to database
     $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    // Query 1: Fetch Booking Details
-    $stmt1 = $pdo->prepare("SELECT 
-                                clients.fullname, 
-                                bookings.total_paid, 
-                                bookings.datex,
-                                bookings.id AS booking_id
-                            FROM bookings
-                            JOIN clients ON bookings.client = clients.id
-                            WHERE bookings.banquet = :banquet_id
-                            AND bookings.total_paid != 0
-                            AND bookings.client = :client_id");
-    $stmt1->execute([':banquet_id' => 1176, ':client_id' => 140001]);
-    $result1 = $stmt1->fetch(PDO::FETCH_ASSOC);
 
     // Query 2: Detailed Bill Amount Calculation
     $stmt2 = $pdo->prepare("SELECT
@@ -94,58 +151,50 @@ try {
                             ORDER BY
                                 bk.reg_date DESC");
 
-    $stmt2->execute([':booking_id' => $result1 ? $result1['booking_id'] : 140001]);
+    $stmt2->execute([':booking_id' => $default_booking_id]);
     $result2 = $stmt2->fetch(PDO::FETCH_ASSOC);
 
     // Update dynamic values from query results
-    if ($result1) {
-        // Convert datex from database to YYYYMMDD format
-        $originalDate = $result1['datex'];
-        $date = DateTime::createFromFormat('Y-m-d', $originalDate)->format('Ymd');
-    } else {
-        $date = "20240401";  // Default date
-    }
-
     if ($result2) {
+        // Handle event_date (reg_date): Check if it exists and is valid
+        $originalDate = $result2['event_date'];
 
+        if (!empty($originalDate)) {
+            // Convert from 'Y-m-d H:i:s' format to 'Ymd'
+            $eventDate = DateTime::createFromFormat('Y-m-d H:i:s', $originalDate);
+            if ($eventDate) {
+                $date = $eventDate->format('Ymd');
+            } else {
+                // If the format is invalid, handle accordingly (e.g., log it, use a default date)
+                $date = 'Invalid Date'; // Set a default or handle the error
+            }
+        } else {
+            // If no valid event_date (reg_date), use a default value
+            $date = 'Invalid Date'; // You can choose a different fallback value
+        }
+
+        // Handle total sales amount and client name
         $total_sales_amount = -$result2['total_bill_amount'];
         $partyName = $result2['client_fullname'];
     } else {
-        $total_sales_amount = "-25000.00";
+        // If no result from the query, use default values
+        $date = 'Invalid Date'; // Default date
+        $total_sales_amount = "-25000.00"; // Default sales amount
     }
 
-// Create the initial XML structure
-$xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><ENVELOPE></ENVELOPE>');
-
-// Add HEADER node
-$header = $xml->addChild('HEADER');
-$header->addChild('TALLYREQUEST', 'Import Data');
-
-// Add BODY node
-$body = $xml->addChild('BODY');
-
-// Add IMPORTDATA node
-$importData = $body->addChild('IMPORTDATA');
-
-// Add REQUESTDESC node
-$requestDesc = $importData->addChild('REQUESTDESC');
-$requestDesc->addChild('REPORTNAME', 'All Masters');
-
-// Add STATICVARIABLES node
-$staticVariables = $requestDesc->addChild('STATICVARIABLES');
-$staticVariables->addChild('SVCURRENTCOMPANY', 'ABC Pvt Ltd');
-
-// Add REQUESTDATA node
-$requestData = $importData->addChild('REQUESTDATA');
-
-// Start of the Sales voucher of 25,000
+// Start of the Sales voucher
 $tallyMessage = $requestData->addChild('TALLYMESSAGE');
 $tallyMessage->addAttribute('xmlns:UDF', 'TallyUDF');
 
 // Add VOUCHER node
 $vch = $tallyMessage->addChild('VOUCHER');
-$vch->addAttribute('REMOTEID', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-'.$voucher_ID);
-$vch->addAttribute('VCHKEY', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-0000b146:'.$voucher_Key);
+
+$voucher_receipt_id = $prefix1 . str_pad($counter, 8, '0', STR_PAD_LEFT);
+$voucher_receipt_key = $prefix2 . str_pad($counter1, 8, '0', STR_PAD_LEFT);
+
+$vch->addAttribute('REMOTEID', $voucher_receipt_id);
+$vch->addAttribute('VCHKEY', $voucher_receipt_key);
+
 $vch->addAttribute('VCHTYPE', 'Sales');
 $vch->addAttribute('ACTION', 'Create');
 $vch->addAttribute('OBJVIEW', 'Invoice Voucher View');
@@ -158,7 +207,7 @@ $oldAuditEntryIdsList->addChild('OLDAUDITENTRYIDS', '-1');
 // Add core voucher details
 $vch->addChild('DATE', $date);
 $vch->addChild('VCHSTATUSDATE', $date);
-$vch->addChild('GUID', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-'.$guID);
+$vch->addChild('GUID', $voucher_receipt_id);
 $vch->addChild('GSTREGISTRATIONTYPE', $gstRegistrationType);
 $vch->addChild('VATDEALERTYPE', $gstRegistrationType);
 $vch->addChild('NARRATION', $sales_narration);
@@ -173,7 +222,10 @@ $gstRegistrationNode->addAttribute('TAXREGISTRATION', '');
 
 $vch->addChild('VOUCHERTYPENAME', 'Sales');
 $vch->addChild('PARTYLEDGERNAME', $partyName);
-$vch->addChild('VOUCHERNUMBER', $voucherNumber1);
+
+$vch->addChild('VOUCHERNUMBER', $sales_voucherNumber);
+$sales_voucherNumber++;
+
 $vch->addChild('BASICBUYERNAME', $partyName);
 $vch->addChild('CMPGSTREGISTRATIONTYPE', $gstRegistrationType);
 $vch->addChild('PARTYMAILINGNAME', $partyName);
@@ -193,11 +245,11 @@ $vch->addChild('VCHGSTCLASS', $escapedDecoded . ' Not Applicable');
 $vch->addChild('VCHENTRYMODE', 'Item Invoice');
 
 // Status flags
-$statusFlags = [
+$statusKeys = [
     'DIFFACTUALQTY', 'ISMSTFROMSYNC', 'ISDELETED', 'ISSECURITYONWHENENTERED', 
     'ASORIGINAL', 'AUDITED', 'ISCOMMONPARTY', 'FORJOBCOSTING', 
-    'ISOPTIONAL','EFFECTIVEDATE', 'USEFOREXCISE', 'ISFORJOBWORKIN', 'ALLOWCONSUMPTION', 
-    'USEFORINTEREST', 'USEFORGAINLOSS', 'USEFORGODOWNTRANSFER', 
+    'ISOPTIONAL', 'EFFECTIVEDATE', 'USEFOREXCISE', 'ISFORJOBWORKIN', 
+    'ALLOWCONSUMPTION', 'USEFORINTEREST', 'USEFORGAINLOSS', 'USEFORGODOWNTRANSFER', 
     'USEFORCOMPOUND', 'USEFORSERVICETAX', 'ISREVERSECHARGEAPPLICABLE', 
     'ISSYSTEM', 'ISFETCHEDONLY', 'ISGSTOVERRIDDEN', 'ISCANCELLED', 
     'ISONHOLD', 'ISSUMMARY', 'ISECOMMERCESUPPLY', 'ISBOENOTAPPLICABLE', 
@@ -205,8 +257,21 @@ $statusFlags = [
     'CMPGSTISOTHTERRITORYASSESSEE', 'PARTYGSTISOTHTERRITORYASSESSEE'
 ];
 
-foreach ($statusFlags as $flag) {
-    $vch->addChild($flag, 'No');
+$statusValues = [
+    'No', 'No', 'No', 'No', 
+    'No', 'No', 'No', 'No', 
+    'No', $date, 'No', 'No', 
+    'No', 'No', 'No', 'No', 
+    'No', 'No', 'No', 
+    'No', 'No', 'No', 'No', 
+    'No', 'No', 'No', 'No', 
+    'No', 'No', 
+    'No', 'No'
+];
+
+// Adding child nodes to $vch
+foreach ($statusKeys as $index => $key) {
+    $vch->addChild($key, $statusValues[$index]);
 }
 
 // Additional specific flags
@@ -282,6 +347,8 @@ foreach ($emptyLists as $listName) {
     $vch->addChild($listName , ' ');
 }
 
+$counter++;
+$counter1++;
 
 try {
 
@@ -308,17 +375,17 @@ try {
 
     // Prepare and execute the query
     $stmt = $pdo->prepare($sql);
-    $stmt->bindParam(':booking_id', $booking_id, PDO::PARAM_INT);
-    $booking_id = 47987; // The booking ID you are interested in
+    $stmt->bindParam(':booking_id', $default_booking_id, PDO::PARAM_INT);
     $stmt->execute();
     
     // Fetch the data
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if (empty($results)) {
-        // Handle case where no data is returned
-        die("No data found for booking ID: $booking_id");
-    }
+    // if (empty($results)) {
+    //     // Handle case where no data is returned
+    //     die("No data found for booking ID: $default_booking_id");
+    //     break;
+    // }
 
 } catch (PDOException $e) {
     echo "Error: " . $e->getMessage();
@@ -521,8 +588,6 @@ foreach ($results as $result) {
         $ledgerEntries ->addChild($listName, ' '); // Adding each tag with an empty string as its value
         }
 
-
-
     $emptylists3 = [
     'GST.LIST', 
     'STKJRNLADDLCOSTDETAILS.LIST',
@@ -539,6 +604,7 @@ foreach ($results as $result) {
 foreach ($emptylists3 as $listName) {
     $vch->addChild($listName , ' ');
 }
+
 
 try {
     // Create a PostgreSQL database connection
@@ -567,8 +633,10 @@ try {
           INNER JOIN
             public.clients c ON b.client = c.id
         WHERE
-            bp.booking = 47987 -- OR c.fullname ILIKE '%aashay%';
+            bp.booking = :booking_id;
     ");
+
+    $stmt->bindParam(':booking_id', $default_booking_id, PDO::PARAM_INT);
 
     // Execute the query
     $stmt->execute();
@@ -577,9 +645,9 @@ try {
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // If no rows found, throw an exception
-    if (empty($rows)) {
-        throw new Exception("No data found in the database");
-    }
+    // if (empty($rows)) {
+    //     throw new Exception("No data found in the database");
+    // }
 
     // Format dates and process rows
     foreach ($rows as &$row) {
@@ -609,18 +677,28 @@ try {
 
     foreach ($rows as $row) {
 
+        
+        $effectiveDate = $row['payment_date'];
+
         // Start of RECEIPTS
         $tallyMessage = $requestData->addChild('TALLYMESSAGE');
         $tallyMessage->addAttribute('xmlns:UDF', 'TallyUDF');
 
         // Add VOUCHER node
         $vch = $tallyMessage->addChild('VOUCHER');
-        $vch->addAttribute('REMOTEID', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-'.$voucher_receipt_id);
-        $vch->addAttribute('VCHKEY', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-0000b146:'.$voucher_receipt_Key);
+
+        $voucher_receipt_id = $prefix1 . str_pad($counter, 8, '0', STR_PAD_LEFT);
+        $voucher_receipt_key = $prefix2 . str_pad($counter1, 8, '0', STR_PAD_LEFT);
+
+        $vch->addAttribute('REMOTEID', $voucher_receipt_id);
+        $vch->addAttribute('VCHKEY', $voucher_receipt_key);
+
+        $counter++;
+        $counter1++;
+
         $vch->addAttribute('VCHTYPE', 'Receipt');
         $vch->addAttribute('ACTION', 'Create');
         $vch->addAttribute('OBJVIEW', 'Accounting Voucher View');
-
 
         // OLDAUDITENTRYIDS.LIST node
         $oldAuditEntryIdsList = $vch->addChild('OLDAUDITENTRYIDS.LIST', null);
@@ -630,7 +708,9 @@ try {
         // Adding other elements from original script
         $vch->addChild('DATE', $row['payment_date']);
         $vch->addChild('VCHSTATUSDATE', $row['payment_date']);
-        $vch->addChild('GUID', 'ef1532b1-c551-4b3f-ac45-04402e1668cc-' . $guId_receipt);
+
+        $vch->addChild('GUID', $voucher_receipt_id);
+
         $vch->addChild('NARRATION', "Receipt ID: " . $row['receipt_id']);
 
         // Adding GSTREGISTRATION with additional attributes
@@ -641,7 +721,10 @@ try {
         // Add additional fields related to the voucher
         $vch->addChild('VOUCHERTYPENAME', 'Receipt');
         $vch->addChild('PARTYLEDGERNAME', $row['client_fullname']);
-        $vch->addChild('VOUCHERNUMBER', $voucherNumber2);
+
+        $vch->addChild('VOUCHERNUMBER', $receipt_voucherNumber);
+        $receipt_voucherNumber++;
+
         $vch->addChild('CMPGSTREGISTRATIONTYPE', 'Regular');
         $vch->addChild('NUMBERINGSTYLE', 'Auto Retain');
         $vch->addChild('CSTFORMISSUETYPE', $escapedDecoded . ' Not Applicable');
@@ -663,7 +746,7 @@ try {
         $vch->addChild('ISCOMMONPARTY', 'No');
         $vch->addChild('FORJOBCOSTING', 'No');
         $vch->addChild('ISOPTIONAL', 'No');
-        $vch->addChild('EFFECTIVEDATE', $date);
+        $vch->addChild('EFFECTIVEDATE', $effectiveDate);
         $vch->addChild('USEFOREXCISE', 'No');
         $vch->addChild('ISFORJOBWORKIN', 'No');
         $vch->addChild('ALLOWCONSUMPTION', 'No');
@@ -726,9 +809,6 @@ try {
         $vch->addChild('ISGSTREFUND', 'No');
         $vch->addChild('OVRDNEWAYBILLAPPLICABILITY', 'No');
         $vch->addChild('ISVATPRINCIPALACCOUNT', 'No');
-
-
-
 
         // Additional status and configuration flags
         $statusFlags = [
@@ -946,7 +1026,7 @@ try {
 
         // Amount of the transaction (dynamic based on payment amount)
         $amount = $row['payment_amount'];
-        $allLedgerEntries2->addChild('AMOUNT', $amount < 0 ? $amount : number_format($amount, 2, '.', ''));
+        $allLedgerEntries2->addChild('AMOUNT', '-' . $amount);
 
         // Additional fields specific to cheque transactions
         if (strtolower($row['payment_mode']) === 'cheque') {
@@ -1025,7 +1105,6 @@ try {
 
     // Output or save the XML
     
-    
 }
 
 catch (PDOException $e) {
@@ -1033,9 +1112,8 @@ catch (PDOException $e) {
 }
 
 
-// Output the XML
-header('Content-Type: application/xml; charset=utf-8');
-echo $xml->asXML();
+
+
 }catch (PDOException $e) {
     die("Database Connection failed: " . $e->getMessage());
 } catch (Exception $e) {
@@ -1043,4 +1121,21 @@ echo $xml->asXML();
 } finally {
     $conn = null;
 }
+ 
+
+// $receipt_voucherNumber++;
+}
+}catch (PDOException $e) {
+    // Handle database connection or query errors
+    echo "Database error: " . $e->getMessage();
+} catch (Exception $e) {
+    // Handle any other errors
+    echo "Error: " . $e->getMessage();
+}
+
+
+// Output the XML
+header('Content-Type: application/xml; charset=utf-8');
+echo $xml->asXML();
+
 ?>
