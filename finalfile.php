@@ -367,12 +367,16 @@ try {
     // Query to fetch the required data
     $sql = "
         SELECT
-            m.monopoly AS service_name,
+			CASE
+		        WHEN bm.tally_ledger_name IS NOT NULL THEN bm.tally_ledger_name
+		        ELSE m.monopoly
+		    END AS service_name,
             CASE
-                WHEN m.id = 1 THEN bb.pax * bb.rate
+                WHEN m.id = 1 THEN bk.pax * bb.rate
                 WHEN bb.perhead = 0 THEN bb.rate
-                ELSE bb.rate * bb.pax
-            END AS total_amount
+                ELSE bb.rate * bk.pax
+            END AS total_amount,
+			bm.tally_ledger_name as ledger
         FROM
             public.booking_breakups bb
         JOIN
@@ -381,8 +385,10 @@ try {
             public.bookings bk ON bk.id = bb.bookingid
         JOIN
             public.clients cl ON cl.id = bk.client
+		JOIN 
+			banquet_monopolies bm on bm.monopoly = m.id and bm.banquet = bk.banquet
         WHERE
-            bk.id = :booking_id
+            bk.id = :booking_id;
     ";
 
     // Prepare and execute the query
