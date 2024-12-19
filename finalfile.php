@@ -21,9 +21,10 @@ $amount_minus_receipt = "0";
 
 $counter = 1;
 $counter1 = 4;
+$receipt_voucherNumber = 1;
 $updater = 1;
 $sales_voucherNumber = 1;
-$receipt_voucherNumber = 1;
+
 
 $prefix1 = 'ef1532b1-c551-4b3f-ac45-04402e1668cc-';
 $prefix2 = 'ef1532b1-c551-4b3f-ac45-04402e1668cc-0000b146:';
@@ -39,11 +40,11 @@ $ledgerName = "Banquet Sales";
 
 // Database connection
 $host = 'localhost';
-$dbname = 'Tallydb';
+$dbname = 'NewTallydb';
 $username = 'postgres';
 $password = '12345678';
 
-$xml = new SimpleXMLElement('<ENVELOPE></ENVELOPE>');
+$xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><ENVELOPE></ENVELOPE>');
 
 // Add HEADER node
 $header = $xml->addChild('HEADER');
@@ -66,7 +67,8 @@ $staticVariables->addChild('SVCURRENTCOMPANY', 'ABC Pvt Ltd');
 // Add REQUESTDATA node
 $requestData = $importData->addChild('REQUESTDATA');
 
-$banquetID = 1176;
+// $banquetID = 80;
+
 
 // Retrieve the values from the query string
 $banquetID = isset($_GET['banquet_id']) ? $_GET['banquet_id'] : null;
@@ -80,36 +82,37 @@ if (!$banquetID || !$startDate || !$endDate) {
 
 try {
 
+    //SALES VOUCHER 
+    
     // Create a PostgreSQL database connection
     $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Prepare the database connection (assuming $pdo is already set up)
-$stmt = $pdo->prepare("
-SELECT 
-    b.id AS booking_id,
-    b.reg_date AS booking_date,
-    c.id AS client_id,
-    c.fullname AS client_name,
-    b.banquet AS banquet_id,
-    b.total AS total_amount
-FROM 
-    public.bookings b
-INNER JOIN 
-    public.clients c ON b.client = c.id
-WHERE 
-    b.reg_date BETWEEN :start_date AND :end_date
-    AND b.banquet = :banquetID
-    LIMIT 10;
-");
+    // Prepare SQL query to fetch data from bookings table
+        $stmt = $pdo->prepare(" SELECT 
+                    b.id AS booking_id,
+                    b.datex AS booking_date,
+                    c.id AS client_id,
+                    c.fullname AS client_name,
+                    b.banquet AS banquet_id,
+                    b.total AS total_amount
+                FROM 
+                    public.bookings b
+                INNER JOIN 
+                    public.clients c ON b.client = c.id
+            WHERE 
+                    b.datex BETWEEN :start_date AND :end_date
+                    AND b.banquet = :banquetID;
+                ");
 
-// Bind the parameters to the query
+    // Bind the global banquet_id to the query
 $stmt->bindParam(':banquetID', $banquetID, PDO::PARAM_INT);
 $stmt->bindParam(':start_date', $startDate, PDO::PARAM_STR);
 $stmt->bindParam(':end_date', $endDate, PDO::PARAM_STR);
 
-// Execute the query
-$stmt->execute();
+
+    // Execute the query
+    $stmt->execute();
 
     // Fetch all rows from the query result
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -132,27 +135,10 @@ try {
     $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Query 1: Fetch Booking Details
-    $stmt1 = $pdo->prepare("SELECT 
-                                clients.fullname, 
-                                bookings.total_paid, 
-                                bookings.datex,
-                                bookings.id AS booking_id
-                            FROM bookings
-                            JOIN clients ON bookings.client = clients.id
-                            WHERE bookings.banquet = :banquet_id
-                            AND bookings.total_paid != 0
-                            AND bookings.client = :client_id");
-    $stmt1->execute([':banquet_id' => $banquet_id, ':client_id' => $client_id]);
-    $result1 = $stmt1->fetch(PDO::FETCH_ASSOC);
-
-    // Use the booking ID from the first query or the default if null
-    $booking_id = $result1 ? $result1['booking_id'] : $default_booking_id;
-
     // Query 2: Detailed Bill Amount Calculation
     $stmt2 = $pdo->prepare("SELECT
                                 cl.fullname AS client_fullname,
-                                bk.reg_date AS event_date,
+                                bk.datex AS event_date,
                                 SUM(
                                     (CASE
                                         WHEN m.id = 1 THEN bk.pax * bb.rate
@@ -165,37 +151,48 @@ try {
                                 ) AS total_bill_amount
                             FROM
                                 public.bookings bk
-                            JOIN
+                            left JOIN
                                 public.booking_breakups bb ON bk.id = bb.bookingid
-                            JOIN
+                            left JOIN
                                 public.monopolies m ON m.id = bb.monopoly
                             JOIN
                                 public.clients cl ON cl.id = bk.client
                             WHERE
                                 bk.id = :booking_id
                             GROUP BY
-                                cl.fullname, bk.reg_date
+                                cl.fullname, bk.datex
                             ORDER BY
-                                bk.reg_date DESC");
+                                bk.datex DESC");
 
-    $stmt2->execute([':booking_id' => $booking_id]);
+    $stmt2->execute([':booking_id' => $default_booking_id]);
     $result2 = $stmt2->fetch(PDO::FETCH_ASSOC);
 
-    // Update dynamic values from query results
-    if ($result1) {
-        // Convert datex from database to YYYYMMDD format
-        $originalDate = $result1['datex'];
-        $date = DateTime::createFromFormat('Y-m-d', $originalDate)->format('Ymd');
-    } else {
-        $date = "20240401"; // Default date
-    }
 
+    // Update dynamic values from query results
     if ($result2) {
+        $originalDate = $result2['event_date'];
+
+        if (!empty($originalDate)) {
+            // Convert from 'Y-m-d' format to 'Ymd'
+            $eventDate = DateTime::createFromFormat('Y-m-d', $originalDate);
+            if ($eventDate) {
+                $date = $eventDate->format('Ymd');
+            } else {
+                $date = '2Invalid Date'; 
+            }
+        } else {
+            $date = ' 1Invalid Date'; 
+        }
+
+        // Handle total sales amount and client name
         $total_sales_amount = -$result2['total_bill_amount'];
         $partyName = $result2['client_fullname'];
     } else {
-        $total_sales_amount = "-25000.00";
+        // If no result from the query, use default values
+        $date = "$result2"; // Default date
+        $total_sales_amount = "-25000.00"; // Default sales amount
     }
+
 
 // Start of the Sales voucher
 $tallyMessage = $requestData->addChild('TALLYMESSAGE');
@@ -260,11 +257,11 @@ $vch->addChild('VCHGSTCLASS', $escapedDecoded . ' Not Applicable');
 $vch->addChild('VCHENTRYMODE', 'Item Invoice');
 
 // Status flags
-$statusFlags = [
+$statusKeys = [
     'DIFFACTUALQTY', 'ISMSTFROMSYNC', 'ISDELETED', 'ISSECURITYONWHENENTERED', 
     'ASORIGINAL', 'AUDITED', 'ISCOMMONPARTY', 'FORJOBCOSTING', 
-    'ISOPTIONAL','EFFECTIVEDATE', 'USEFOREXCISE', 'ISFORJOBWORKIN', 'ALLOWCONSUMPTION', 
-    'USEFORINTEREST', 'USEFORGAINLOSS', 'USEFORGODOWNTRANSFER', 
+    'ISOPTIONAL', 'EFFECTIVEDATE', 'USEFOREXCISE', 'ISFORJOBWORKIN', 
+    'ALLOWCONSUMPTION', 'USEFORINTEREST', 'USEFORGAINLOSS', 'USEFORGODOWNTRANSFER', 
     'USEFORCOMPOUND', 'USEFORSERVICETAX', 'ISREVERSECHARGEAPPLICABLE', 
     'ISSYSTEM', 'ISFETCHEDONLY', 'ISGSTOVERRIDDEN', 'ISCANCELLED', 
     'ISONHOLD', 'ISSUMMARY', 'ISECOMMERCESUPPLY', 'ISBOENOTAPPLICABLE', 
@@ -272,8 +269,21 @@ $statusFlags = [
     'CMPGSTISOTHTERRITORYASSESSEE', 'PARTYGSTISOTHTERRITORYASSESSEE'
 ];
 
-foreach ($statusFlags as $flag) {
-    $vch->addChild($flag, 'No');
+$statusValues = [
+    'No', 'No', 'No', 'No', 
+    'No', 'No', 'No', 'No', 
+    'No', $date, 'No', 'No', 
+    'No', 'No', 'No', 'No', 
+    'No', 'No', 'No', 
+    'No', 'No', 'No', 'No', 
+    'No', 'No', 'No', 'No', 
+    'No', 'No', 
+    'No', 'No'
+];
+
+// Adding child nodes to $vch
+foreach ($statusKeys as $index => $key) {
+    $vch->addChild($key, $statusValues[$index]);
 }
 
 // Additional specific flags
@@ -357,16 +367,12 @@ try {
     // Query to fetch the required data
     $sql = "
         SELECT
-			CASE
-		        WHEN bm.tally_ledger_name IS NOT NULL THEN bm.tally_ledger_name
-		        ELSE m.monopoly
-		    END AS service_name,
+            m.monopoly AS service_name,
             CASE
                 WHEN m.id = 1 THEN bb.pax * bb.rate
                 WHEN bb.perhead = 0 THEN bb.rate
                 ELSE bb.rate * bb.pax
-            END AS total_amount,
-			bm.tally_ledger_name as ledger
+            END AS total_amount
         FROM
             public.booking_breakups bb
         JOIN
@@ -375,10 +381,8 @@ try {
             public.bookings bk ON bk.id = bb.bookingid
         JOIN
             public.clients cl ON cl.id = bk.client
-		JOIN 
-			banquet_monopolies bm on bm.monopoly = m.id and bm.banquet = bk.banquet
         WHERE
-            bk.id = :booking_id;
+            bk.id = :booking_id
     ";
 
     // Prepare and execute the query
@@ -685,6 +689,9 @@ try {
 
     foreach ($rows as $row) {
 
+        
+        $effectiveDate = $row['payment_date'];
+
         // Start of RECEIPTS
         $tallyMessage = $requestData->addChild('TALLYMESSAGE');
         $tallyMessage->addAttribute('xmlns:UDF', 'TallyUDF');
@@ -704,7 +711,6 @@ try {
         $vch->addAttribute('VCHTYPE', 'Receipt');
         $vch->addAttribute('ACTION', 'Create');
         $vch->addAttribute('OBJVIEW', 'Accounting Voucher View');
-
 
         // OLDAUDITENTRYIDS.LIST node
         $oldAuditEntryIdsList = $vch->addChild('OLDAUDITENTRYIDS.LIST', null);
@@ -752,7 +758,7 @@ try {
         $vch->addChild('ISCOMMONPARTY', 'No');
         $vch->addChild('FORJOBCOSTING', 'No');
         $vch->addChild('ISOPTIONAL', 'No');
-        $vch->addChild('EFFECTIVEDATE', $date);
+        $vch->addChild('EFFECTIVEDATE', $effectiveDate);
         $vch->addChild('USEFOREXCISE', 'No');
         $vch->addChild('ISFORJOBWORKIN', 'No');
         $vch->addChild('ALLOWCONSUMPTION', 'No');
@@ -1139,7 +1145,6 @@ catch (PDOException $e) {
     echo "Error: " . $e->getMessage();
 }
 
-
 if (isset($_GET['download']) && $_GET['download'] == 'true') {
     // Set headers to force download
     header('Content-Type: application/xml');
@@ -1150,6 +1155,5 @@ if (isset($_GET['download']) && $_GET['download'] == 'true') {
     header('Content-Type: application/xml; charset=utf-8');
     echo $xml->asXML();
 }
-
 
 ?>
