@@ -15,10 +15,6 @@ $gstRegistrationType = "Regular";
 $gstRegistration = "ABC Pvt Ltd";
 $country = "India";
 
-$special = "&#4;"; 
-$decoded = html_entity_decode($special, ENT_QUOTES, 'UTF-8'); 
-$escapedDecoded = htmlspecialchars($decoded, ENT_QUOTES, 'UTF-8');
-
 $ledger_name = "Banquet Sales";
 $bill_type = "New Ref";
 $billType_receipt = "Agst Ref";
@@ -105,7 +101,7 @@ try {
         $banquet_id = $row['banquet_id'];
         $client_id = $row['client_id'];
         $default_booking_id = $row['booking_id'];
-        $partyName = $row['client_name'];
+        $partyName = $row['client_name'] . '-' . $row['client_id'];
         $name = "BQ-" . $client_id;
 
 /*
@@ -173,7 +169,7 @@ try {
             $date = ' No date Available'; 
         }
         $total_sales_amount = -$result2['total_bill_amount'];
-        $partyName = $result2['client_fullname'];
+        $partyName = $row['client_name'] . '-' . $row['client_id'];
     } else {
         $date = "No date Available";
         $total_sales_amount = "-0.00";
@@ -217,14 +213,11 @@ $vch->addChild('CONSIGNEEMAILINGNAME', $partyName);
 $vch->addChild('CONSIGNEECOUNTRYNAME', $country);
 $vch->addChild('BASICBASEPARTYNAME', $partyName);
 $vch->addChild('NUMBERINGSTYLE', 'Auto Retain');
-$vch->addChild('CSTFORMISSUETYPE', $escapedDecoded . ' Not Applicable');
-$vch->addChild('CSTFORMRECVTYPE', $escapedDecoded . ' Not Applicable');
 $vch->addChild('FBTPAYMENTTYPE', 'Default');
 $vch->addChild('PERSISTEDVIEW', 'Invoice Voucher View');
 $vch->addChild('VCHSTATUSTAXADJUSTMENT', 'Default');
 $vch->addChild('VCHSTATUSVOUCHERTYPE', 'Sales');
 $vch->addChild('VCHSTATUSTAXUNIT', $companyName);
-$vch->addChild('VCHGSTCLASS', $escapedDecoded . ' Not Applicable');
 $vch->addChild('VCHENTRYMODE', 'Item Invoice');
 $statusKeys = [
     'DIFFACTUALQTY', 'ISMSTFROMSYNC', 'ISDELETED', 'ISSECURITYONWHENENTERED', 
@@ -406,9 +399,6 @@ foreach ($results as $result) {
     $batchAllocations = $inventoryEntries->addChild('BATCHALLOCATIONS.LIST');
     $batchAllocations->addChild('GODOWNNAME', 'Main Location');
     $batchAllocations->addChild('BATCHNAME', 'Primary Batch');
-    $batchAllocations->addChild('INDENTNO', $escapedDecoded . ' Not Applicable');
-    $batchAllocations->addChild('ORDERNO', $escapedDecoded . ' Not Applicable');
-    $batchAllocations->addChild('TRACKINGNUMBER', $escapedDecoded . ' Not Applicable');
     $batchAllocations->addChild('DYNAMICCSTISCLEARED', 'No');
     $batchAllocations->addChild('AMOUNT', $stock_item_amount);
     $batchEmptyLists = [
@@ -423,7 +413,6 @@ foreach ($results as $result) {
     $oldAuditEntryIdsList->addAttribute('TYPE', 'Number');
     $oldAuditEntryIdsList->addChild('OLDAUDITENTRYIDS', '-1');
     $accountingAllocations->addChild('LEDGERNAME', $ledger_name); 
-    $accountingAllocations->addChild('GSTCLASS', $escapedDecoded . ' Not Applicable');
     $accountingFixedElements = [
         'ISDEEMEDPOSITIVE' => 'No',
         'LEDGERFROMITEM' => 'No',
@@ -495,7 +484,6 @@ foreach ($results as $result) {
     $oldAuditIds->addAttribute('TYPE', 'Number');
     $oldAuditIds->addChild('OLDAUDITENTRYIDS', '-1');
     $ledgerEntries->addChild('LEDGERNAME', $partyName);
-    $ledgerEntries->addChild('GSTCLASS', $escapedDecoded . ' Not Applicable');
     $ledgerEntries->addChild('ISDEEMEDPOSITIVE', 'Yes');
     $ledgerEntries->addChild('LEDGERFROMITEM', 'No');
     $ledgerEntries->addChild('REMOVEZEROENTRIES', 'No');
@@ -665,14 +653,11 @@ try {
         $receipt_voucherNumber++;  // ############### receipt voucher number updated #####################
         $vch->addChild('CMPGSTREGISTRATIONTYPE', 'Regular');
         $vch->addChild('NUMBERINGSTYLE', 'Auto Retain');
-        $vch->addChild('CSTFORMISSUETYPE', $escapedDecoded . ' Not Applicable');
-        $vch->addChild('CSTFORMRECVTYPE', $escapedDecoded . ' Not Applicable');
         $vch->addChild('FBTPAYMENTTYPE', 'Default');
         $vch->addChild('PERSISTEDVIEW', 'Accounting Voucher View');
         $vch->addChild('VCHSTATUSTAXADJUSTMENT', 'Default');
         $vch->addChild('VCHSTATUSVOUCHERTYPE', 'Receipt');
         $vch->addChild('VCHSTATUSTAXUNIT', $companyName);
-        $vch->addChild('VCHGSTCLASS', $escapedDecoded . ' Not Applicable');
         $vch->addChild('DIFFACTUALQTY', 'No');
         $vch->addChild('ISMSTFROMSYNC', 'No');
         $vch->addChild('ISDELETED', 'No');
@@ -833,9 +818,7 @@ try {
         $oldAuditEntryIds1 = $allLedgerEntries1->addChild('OLDAUDITENTRYIDS.LIST');
         $oldAuditEntryIds1->addAttribute('TYPE', 'Number');
         $oldAuditEntryIds1->addChild('OLDAUDITENTRYIDS', '-1');
-        $allLedgerEntries1->addChild('APPROPRIATEFOR', $escapedDecoded . ' Not Applicable');
         $allLedgerEntries1->addChild('LEDGERNAME', $row['client_fullname']);
-        $allLedgerEntries1->addChild('GSTCLASS', $escapedDecoded . ' Not Applicable');
         $ledgerFlags1 = [
             'ISDEEMEDPOSITIVE',
             'LEDGERFROMITEM',
@@ -908,7 +891,6 @@ try {
         $oldAuditEntryIds2->addAttribute('TYPE', 'Number');
         $oldAuditEntryIds2->addChild('OLDAUDITENTRYIDS', '-1');
         $allLedgerEntries2->addChild('LEDGERNAME', htmlspecialchars($row['payment_mode'], ENT_QUOTES, 'UTF-8'));
-        $allLedgerEntries2->addChild('GSTCLASS', $escapedDecoded . ' Not Applicable');
         $allLedgerEntries2->addChild('ISDEEMEDPOSITIVE', $row['payment_amount'] < 0 ? 'No' : 'Yes');
         $allLedgerEntries2->addChild('LEDGERFROMITEM', 'No');
         $allLedgerEntries2->addChild('REMOVEZEROENTRIES', 'No');
