@@ -140,7 +140,7 @@ try {
                         ELSE bb.rate * bb.pax
                     END
             END
-        ) AS total_bill_amount
+        ) + COALESCE(bk.rent, 0) AS total_bill_amount
     FROM
         public.bookings bk
     LEFT JOIN
@@ -152,10 +152,10 @@ try {
     WHERE
         bk.id = :booking_id
     GROUP BY
-        cl.fullname, bk.datex
+        cl.fullname, bk.datex, bk.rent
     ORDER BY
         bk.datex DESC
-    ");
+");
     $stmt2->execute([':booking_id' => $default_booking_id]);
     $result2 = $stmt2->fetch(PDO::FETCH_ASSOC);
 
@@ -294,8 +294,8 @@ foreach ($additionalFlags as $flag) {
     $vch->addChild($flag, $value);
 }
 $tagsWithValues = [
-    'ALTERID' => '1',
-    'MASTERID' => '1',
+    'ALTERID' => ' 1',
+    'MASTERID' => ' 1',
     'VOUCHERKEY' => '194914205827080',
     'VOUCHERRETAINKEY' => '1',
     'VOUCHERNUMBERSERIES' => 'Default'
@@ -329,35 +329,47 @@ $counter1++;
 
 
 try {
-
         // SQL Query 3: To fetch service name and the total amount of the service 
         $sql = "
-        SELECT
-            CASE
-                WHEN bm.tally_ledger_name IS NOT NULL THEN bm.tally_ledger_name
-                ELSE m.monopoly
-            END AS service_name,
-            
-            CASE
-                WHEN m.id = 1 THEN bk.pax * bb.rate
-                WHEN bb.perhead = 0 THEN bb.rate
-                ELSE bb.rate * bk.pax
-            END AS total_amount,
-            
-            bm.tally_ledger_name AS ledger
-        FROM
-            public.booking_breakups bb
-        JOIN
-            public.monopolies m ON m.id = bb.monopoly
-        JOIN
-            public.bookings bk ON bk.id = bb.bookingid
-        JOIN
-            public.clients cl ON cl.id = bk.client
-        JOIN 
-            banquet_monopolies bm ON bm.monopoly = m.id AND bm.banquet = bk.banquet
-        WHERE
-            bk.id = :booking_id;
-    ";    
+    SELECT
+        CASE
+            WHEN bm.tally_ledger_name IS NOT NULL THEN bm.tally_ledger_name
+            ELSE m.monopoly
+        END AS service_name,
+        
+        CASE
+            WHEN m.id = 1 THEN bk.pax * bb.rate
+            WHEN bb.perhead = 0 THEN bb.rate
+            ELSE bb.rate * bk.pax
+        END AS total_amount,
+        
+        bm.tally_ledger_name AS ledger
+    FROM
+        public.booking_breakups bb
+    JOIN
+        public.monopolies m ON m.id = bb.monopoly
+    JOIN
+        public.bookings bk ON bk.id = bb.bookingid
+    JOIN
+        public.clients cl ON cl.id = bk.client
+    JOIN 
+        banquet_monopolies bm ON bm.monopoly = m.id AND bm.banquet = bk.banquet
+    WHERE
+        bk.id = :booking_id
+        
+    UNION ALL
+    
+    SELECT 
+        'hall_rent' AS service_name,
+        bk.rent AS total_amount,
+        'hall_name' AS ledger
+    FROM
+        bookings bk
+    JOIN 
+        clients cl ON cl.id = bk.client
+    WHERE
+        bk.id = :booking_id;
+";
     $stmt = $pdo->prepare($sql);
     $stmt->bindParam(':booking_id', $default_booking_id, PDO::PARAM_INT);
     $stmt->execute();
@@ -789,8 +801,8 @@ try {
         $vch->addChild('ISDELETEDVCHRETAINED', 'No');
         $vch->addChild('CHANGEVCHMODE', 'No');
         $vch->addChild('RESETIRNQRCODE', 'No');
-        $vch->addChild('ALTERID', '2');
-        $vch->addChild('MASTERID', '2');
+        $vch->addChild('ALTERID', ' 2');
+        $vch->addChild('MASTERID', ' 2');
         $vch->addChild('VOUCHERKEY', '194914205827088');
         $vch->addChild('VOUCHERRETAINKEY', '1');
         $vch->addChild('VOUCHERNUMBERSERIES', 'Default');

@@ -76,3 +76,36 @@ data replace-pending
 19/12/2024
 Hall Rent
 Tracking Number
+
+SELECT
+            CASE
+                WHEN bm.tally_ledger_name IS NOT NULL THEN bm.tally_ledger_name
+                ELSE m.monopoly
+            END AS service_name,
+            
+            CASE
+                WHEN m.id = 1 THEN bk.pax * bb.rate
+                WHEN bb.perhead = 0 THEN bb.rate
+                ELSE bb.rate * bk.pax
+            END AS total_amount,
+            
+            bm.tally_ledger_name AS ledger
+        FROM
+            public.booking_breakups bb
+        JOIN
+            public.monopolies m ON m.id = bb.monopoly
+        JOIN
+            public.bookings bk ON bk.id = bb.bookingid
+        JOIN
+            public.clients cl ON cl.id = bk.client
+        JOIN 
+            banquet_monopolies bm ON bm.monopoly = m.id AND bm.banquet = bk.banquet
+        WHERE
+            bk.id = 69947
+
+		union all
+select 'hall_rent' service_name,bk.rent total_amount,'hall_name' ledger
+from bookings bk
+join clients cl on cl.id=bk.client
+where bk.id=69947
+
