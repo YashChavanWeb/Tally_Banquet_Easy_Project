@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banquet Easy</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7fc;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+
+        label {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        input[type="number"],
+        input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        input[type="number"]:focus,
+        input[type="date"]:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: background-color 0.3s ease;
+        }
+
+        button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        #downloadBtn {
+            background-color: #28a745;
+            color: white;
+        }
+
+        #downloadBtn:hover {
+            background-color: #218838;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-actions button {
+            width: 48%;
+        }
+
+        .alert {
+            color: #d9534f;
+            font-size: 14px;
+            display: none;
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Banquet Easy</h1>
+
+        <!-- html for for collecting data -->
+        <form id="bookingForm" action="finalfile.php" method="get">
+            <div class="form-group">
+                <label for="banquet_id">Banquet ID:</label>
+                <input type="number" id="banquet_id" name="banquet_id" required>
+            </div>
+            <div class="form-group">
+                <label for="start_date">Start Date:</label>
+                <input type="date" id="start_date" name="start_date" required>
+            </div>
+            <div class="form-group">
+                <label for="end_date">End Date:</label>
+                <input type="date" id="end_date" name="end_date" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit">View File</button>
+                <button type="button" id="downloadBtn">Download File</button>
+            </div>
+            <div class="alert" id="alertMessage">Please fill in all fields before downloading.</div>
+        </form>
+    </div>
+
+    <!-- Javascript logic for interacting with the php file -->
+    <script>
+        document.getElementById('downloadBtn').addEventListener('click', function () {
+            var banquetId = document.getElementById('banquet_id').value;
+            var startDate = document.getElementById('start_date').value;
+            var endDate = document.getElementById('end_date').value;
+
+            if (banquetId && startDate && endDate) {
+                var downloadUrl = 'finalfile.php?banquet_id=' + encodeURIComponent(banquetId) +
+                    '&start_date=' + encodeURIComponent(startDate) +
+                    '&end_date=' + encodeURIComponent(endDate) +
+                    '&download=true';
+                window.location.href = downloadUrl;
+            } else {
+                document.getElementById('alertMessage').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+
+</html>
