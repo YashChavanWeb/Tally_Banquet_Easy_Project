@@ -650,7 +650,17 @@ try {
         $vch->addChild('DATE', $row['payment_date']);
         $vch->addChild('VCHSTATUSDATE', $row['payment_date']);
         $vch->addChild('GUID', $voucher_receipt_id);
-        $vch->addChild('NARRATION', "BE receipt id: $row[main_id] / $row[comments]");
+        // Receipt Narration modification
+         // Start building the NARRATION string with receipt_id and comments
+    $narration = "BE receipt id: {$row['receipt_id']} / {$row['comments']}";
+
+    // Check if the payment mode is "online" and add the transaction ID if true
+    if ($row['payment_mode'] == 'Online') {
+        $narration .= " / Transaction ID: {$row['transaction_id']}";
+    }
+
+    // Add the NARRATION as a child element
+    $vch->addChild('NARRATION', $narration);
         $gstRegistration = $vch->addChild('GSTREGISTRATION', 'ABC Pvt Ltd');
         $gstRegistration->addAttribute('TAXTYPE', 'GST');
         $gstRegistration->addAttribute('TAXREGISTRATION', '');
