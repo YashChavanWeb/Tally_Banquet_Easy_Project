@@ -110,7 +110,7 @@
     <div class="container">
         <h1>Banquet Easy</h1>
 
-        <!-- html for for collecting data -->
+        <!-- html form for collecting data -->
         <form id="bookingForm" action="finalfile.php" method="get">
             <div class="form-group">
                 <label for="banquet_id">Banquet ID:</label>
@@ -126,7 +126,8 @@
             </div>
             <div class="form-actions">
                 <button type="submit">View File</button>
-                <button type="button" id="downloadBtn">Download File</button>
+                <button type="button" id="downloadBtn">Download XML</button>
+                <button type="button" id="downloadCsvBtn">Download CSV</button>
             </div>
             <div class="alert" id="alertMessage">Please fill in all fields before downloading.</div>
         </form>
@@ -134,6 +135,7 @@
 
     <!-- Javascript logic for interacting with the php file -->
     <script>
+        // When the 'Download XML' button is clicked
         document.getElementById('downloadBtn').addEventListener('click', function () {
             var banquetId = document.getElementById('banquet_id').value;
             var startDate = document.getElementById('start_date').value;
@@ -143,12 +145,30 @@
                 var downloadUrl = 'finalfile.php?banquet_id=' + encodeURIComponent(banquetId) +
                     '&start_date=' + encodeURIComponent(startDate) +
                     '&end_date=' + encodeURIComponent(endDate) +
-                    '&download=true';
+                    '&download=true';  // Ensure this triggers the PHP download block
                 window.location.href = downloadUrl;
             } else {
                 document.getElementById('alertMessage').style.display = 'block';
             }
         });
+
+        // When the 'Download CSV' button is clicked
+        document.getElementById('downloadCsvBtn').addEventListener('click', function () {
+            var banquetId = document.getElementById('banquet_id').value;
+            var startDate = document.getElementById('start_date').value;
+            var endDate = document.getElementById('end_date').value;
+
+            if (banquetId && startDate && endDate) {
+                var downloadUrl = 'finalfile.php?banquet_id=' + encodeURIComponent(banquetId) +
+                    '&start_date=' + encodeURIComponent(startDate) +
+                    '&end_date=' + encodeURIComponent(endDate) +
+                    '&download=true&format=csv';  // Ensure this triggers CSV download
+                window.location.href = downloadUrl;
+            } else {
+                document.getElementById('alertMessage').style.display = 'block';
+            }
+        });
+
     </script>
 </body>
 

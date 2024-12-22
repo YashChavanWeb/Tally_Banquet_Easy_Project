@@ -101,7 +101,7 @@ try {
         $banquet_id = $row['banquet_id'];
         $client_id = $row['client_id'];
         $default_booking_id = $row['booking_id'];
-        $partyName = $row['client_name'] . '-' . $row['client_id'];
+        $partyName = $row['client_name'] . ' - ' . $row['client_id'];
         $name = "BQ-" . $client_id;
 
 /*
@@ -148,7 +148,7 @@ try {
     WHERE
         bk.id = :booking_id
     GROUP BY
-        cl.fullname, bk.datex, bk.rent
+        cl.fullname, bk.datex, bk.commentsx, bk.rent
     ORDER BY
         bk.datex DESC
 ");
@@ -169,7 +169,7 @@ try {
             $date = ' No date Available'; 
         }
         $total_sales_amount = -$result2['total_bill_amount'];
-        $partyName = $row['client_name'] . '-' . $row['client_id'];
+        $partyName = $row['client_name'] . ' - ' . $row['client_id'];
     } else {
         $date = "No date Available";
         $total_sales_amount = "-0.00";
@@ -196,7 +196,7 @@ $vch->addChild('VCHSTATUSDATE', $date);
 $vch->addChild('GUID', $voucher_receipt_id);
 $vch->addChild('GSTREGISTRATIONTYPE', $gstRegistrationType);
 $vch->addChild('VATDEALERTYPE', $gstRegistrationType);
-$vch->addChild('NARRATION', $sales_narration);
+$vch->addChild('NARRATION', "Booking id : " . $row['booking_id']);
 $vch->addChild('COUNTRYOFRESIDENCE', $country);
 $vch->addChild('PARTYNAME', $partyName);
 $gstRegistrationNode = $vch->addChild('GSTREGISTRATION', $gstRegistration);
@@ -549,6 +549,9 @@ foreach ($results as $result) {
 foreach ($emptylists3 as $listName) {
     $vch->addChild($listName , ' ');
 }
+}catch (PDOException $e) {
+    die("Database Connection failed: " . $e->getMessage());
+} 
 
 /*
 
@@ -582,7 +585,8 @@ try {
           bp.cheque_date AS cheque_date,
           bp.commentsx AS comments,
           bp.receipt_id AS receipt_id,
-          bp.banquet_receipt_no AS banquet_receipt_number
+          bp.banquet_receipt_no AS banquet_receipt_number,
+          bp.id AS main_id
         FROM 
           public.booking_payments bp
           INNER JOIN
@@ -597,8 +601,14 @@ try {
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
-    // Date formatting for payment date
-    foreach ($rows as &$row) {
+
+
+
+    // Start of the xml code of the receipts voucher
+
+    foreach ($rows as $row) {
+
+
         if (!empty($row['payment_date'])) {
             $paymentDate = DateTime::createFromFormat('Y-m-d H:i:s', $row['payment_date']);
             if ($paymentDate) {
@@ -610,19 +620,16 @@ try {
 
         // Date formatting for cheque date
         if (!empty($row['cheque_date'])) {
-            $chequeDate = DateTime::createFromFormat('Y-m-d H:i:s', $row['cheque_date']);
+            $chequeDate = DateTime::createFromFormat('Y-m-d', $row['cheque_date']);
             if ($chequeDate) {
                 $row['cheque_date'] = $chequeDate->format('Ymd');
             } else {
                 $row['cheque_date'] = 'Invalid Date';
             }
         }
-    }
 
 
-    // Start of the xml code of the receipts voucher
 
-    foreach ($rows as $row) {
 
         $effectiveDate = $row['payment_date'];
         $tallyMessage = $requestData->addChild('TALLYMESSAGE');
@@ -643,12 +650,12 @@ try {
         $vch->addChild('DATE', $row['payment_date']);
         $vch->addChild('VCHSTATUSDATE', $row['payment_date']);
         $vch->addChild('GUID', $voucher_receipt_id);
-        $vch->addChild('NARRATION', $receipt_narration);
+        $vch->addChild('NARRATION', "BE receipt id: $row[main_id] / $row[comments]");
         $gstRegistration = $vch->addChild('GSTREGISTRATION', 'ABC Pvt Ltd');
         $gstRegistration->addAttribute('TAXTYPE', 'GST');
         $gstRegistration->addAttribute('TAXREGISTRATION', '');
         $vch->addChild('VOUCHERTYPENAME', 'Receipt');
-        $vch->addChild('PARTYLEDGERNAME', $row['client_fullname']);
+        $vch->addChild('PARTYLEDGERNAME', $partyName);
         $vch->addChild('VOUCHERNUMBER', $receipt_voucherNumber);
         $receipt_voucherNumber++;  // ############### receipt voucher number updated #####################
         $vch->addChild('CMPGSTREGISTRATIONTYPE', 'Regular');
@@ -818,7 +825,7 @@ try {
         $oldAuditEntryIds1 = $allLedgerEntries1->addChild('OLDAUDITENTRYIDS.LIST');
         $oldAuditEntryIds1->addAttribute('TYPE', 'Number');
         $oldAuditEntryIds1->addChild('OLDAUDITENTRYIDS', '-1');
-        $allLedgerEntries1->addChild('LEDGERNAME', $row['client_fullname']);
+        $allLedgerEntries1->addChild('LEDGERNAME', $partyName);
         $ledgerFlags1 = [
             'ISDEEMEDPOSITIVE',
             'LEDGERFROMITEM',
@@ -959,39 +966,136 @@ try {
         }
     }
 }
+// receipt try cat
 catch (PDOException $e) {
     die("Database Connection failed: " . $e->getMessage());
 }
-}catch (PDOException $e) {
-    die("Database Connection failed: " . $e->getMessage());
-} catch (Exception $e) {
-    die("Error: " . $e->getMessage());
-} finally {
-    $conn = null;
+
 }
+
+
+
 }
-}catch (PDOException $e) {
+// maint try block catch 
+catch (PDOException $e) {
     echo "Database error: " . $e->getMessage();
-} catch (Exception $e) {
-    echo "Error: " . $e->getMessage();
-}
+} 
 
 // Logic for interacting with the html requests 
 
+// if (isset($_GET['download']) && $_GET['download'] == 'true') {
+//     if (isset($_GET['start_date']) && !empty($_GET['start_date'])) {
+//         $startDate = $_GET['start_date'];
+//         $formattedDate = date("F", strtotime($startDate)) . date("y", strtotime($startDate));
+//         $filename = strtolower($formattedDate) . '.xml';
+//         header('Content-Type: application/xml');
+//         header('Content-Disposition: attachment; filename="' . $filename . '"');
+//         echo $xml->asXML();
+//         exit;
+//     } else {
+//         echo 'Start date is required for downloading the file.';
+//     }
+// } else {
+//     header('Content-Type: application/xml; charset=utf-8');
+//     echo $xml->asXML();
+// }
+
+
+// Check if download is requested
 if (isset($_GET['download']) && $_GET['download'] == 'true') {
-    if (isset($_GET['start_date']) && !empty($_GET['start_date'])) {
-        $startDate = $_GET['start_date'];
-        $formattedDate = date("F", strtotime($startDate)) . date("y", strtotime($startDate));
-        $filename = strtolower($formattedDate) . '.xml';
-        header('Content-Type: application/xml');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        echo $xml->asXML();
-        exit;
+    // Get input parameters from the URL
+    $banquetId = isset($_GET['banquet_id']) ? $_GET['banquet_id'] : null;
+    $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : null;
+    $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : null;
+    $format = isset($_GET['format']) ? $_GET['format'] : 'xml'; // Default to XML if no format specified
+
+    // Validate required parameters
+    if ($banquetId && $startDate && $endDate) {
+        // Prepare SQL query to fetch data from the database
+        $sql = "SELECT 
+                    b.id AS booking_id,
+                    b.datex AS booking_date,
+                    c.id AS client_id,
+                    c.fullname AS client_name,
+                    b.banquet AS banquet_id,
+                    b.total AS total_amount
+                FROM 
+                    public.bookings b
+                INNER JOIN 
+                    public.clients c ON b.client = c.id
+                WHERE 
+                    b.datex BETWEEN :start_date AND :end_date
+                    AND b.banquet = :banquetID";
+
+        // Prepare the statement
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':banquetID', $banquetId, PDO::PARAM_INT);
+        $stmt->bindParam(':start_date', $startDate, PDO::PARAM_STR);
+        $stmt->bindParam(':end_date', $endDate, PDO::PARAM_STR);
+
+        // Execute the query
+        $stmt->execute();
+
+        // Fetch the results
+        $filteredData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Check if we have any data to export
+        if (empty($filteredData)) {
+            echo 'No data found for the specified filters.';
+            exit;
+        }
+
+        // Based on the requested format, generate either XML or CSV
+        if ($format === 'csv') {
+            // Prepare the CSV file content
+            $filename = 'booking_data_' . date("Ymd") . '.csv';
+            header('Content-Type: text/csv');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            
+            // Open the output stream for CSV
+            $output = fopen('php://output', 'w');
+            
+            // Column headers with combined Client Name and Client ID
+            fputcsv($output, ['Booking ID', 'Client Name - Client ID', 'Banquet ID']); // Adjusted header
+            
+            // Output each row of data
+            foreach ($filteredData as $row) {
+                // Combine client name and client id in one column
+                $clientNameAndId = $row['client_name'] . ' - ' . $row['client_id'];
+                fputcsv($output, [
+                    $row['booking_id'],
+                    $clientNameAndId, // Combined client name and id
+                    $row['banquet_id']
+                ]);
+            }
+            
+            fclose($output);
+            exit;
+
+        } elseif ($format === 'xml') {
+            if (isset($_GET['start_date']) && !empty($_GET['start_date'])) {
+                        $startDate = $_GET['start_date'];
+                        $formattedDate = date("F", strtotime($startDate)) . date("y", strtotime($startDate));
+                        $filename = strtolower($formattedDate) . '.xml';
+                        header('Content-Type: application/xml');
+                        header('Content-Disposition: attachment; filename="' . $filename . '"');
+                        echo $xml->asXML();
+                        exit;
+                    } else {
+                        echo 'Start date is required for downloading the file.';
+                    }
+        } else {
+            echo 'Unsupported format requested.';
+            exit;
+        }
     } else {
-        echo 'Start date is required for downloading the file.';
+        echo 'Banquet ID, Start Date, and End Date are required for downloading the file.';
+        exit;
     }
-} else {
-    header('Content-Type: application/xml; charset=utf-8');
-    echo $xml->asXML();
-}
+}  else {
+        header('Content-Type: application/xml; charset=utf-8');
+        echo $xml->asXML();
+    }
+
+
 ?>

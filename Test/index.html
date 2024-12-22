@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Bookings</title>
+</head>
+
+<body>
+    <h1>Download Bookings Report</h1>
+
+    <button onclick="downloadBookings('2024-01-01', '2024-12-31', 123)">Download Bookings</button>
+
+    <script>
+        async function downloadBookings(startDate, endDate, banquetID) {
+            try {
+                // Fetch the booking data from the PHP API
+                const response = await fetch('get_bookings.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ startDate, endDate, banquetID }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+
+                const bookings = await response.json();
+
+                // If there was an error or no data
+                if (bookings.error) {
+                    alert(bookings.error);
+                    return;
+                }
+
+                // Prepare the data for the Excel file
+                const excelData = bookings.map(booking => ({
+                    "Booking ID": booking.booking_id,
+                    "Client Name": booking.client_name,
+                }));
+
+                // Create a new worksheet from the data
+                const ws = XLSX.utils.json_to_sheet(excelData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Bookings");
+
+                // Write the workbook to a file and trigger the download
+                XLSX.writeFile(wb, "bookings_report.xlsx");
+
+            } catch (error) {
+                console.error("Error downloading bookings:", error);
+            }
+        }
+    </script>
+</body>
+<!-- Include the xlsx library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+
+
+</html>
