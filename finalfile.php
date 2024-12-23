@@ -330,7 +330,7 @@ try {
         CASE
             WHEN m.id = 1 THEN bk.pax * bb.rate
             WHEN bb.perhead = 0 THEN bb.rate
-            ELSE bb.rate * bk.pax
+            ELSE bb.rate * bb.pax
         END AS total_amount,
         
         bm.tally_ledger_name AS ledger
