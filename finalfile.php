@@ -7,7 +7,6 @@ $dbname = 'NewTallydb';
 $username = 'postgres';
 $password = '12345678';
 
-
 // Predefined values
 
 $companyName = "ABC Pvt Ltd";
@@ -22,11 +21,9 @@ $billType_receipt = "Agst Ref";
 $prefix1 = 'ef1532b1-c551-4b3f-ac45-04402e1668cc-';
 $prefix2 = 'ef1532b1-c551-4b3f-ac45-04402e1668cc-0000b146:';
 
-
 // Narration
 $sales_narration = "Sales Narration";
 $receipt_narration = "Receipt Narration";
-
 
 // Counters for the vouchers
 
@@ -70,7 +67,7 @@ try {
     $stmt = $pdo->prepare("
     SELECT 
         b.id AS booking_id,
-        b.datex AS booking_date,
+        b.datex AS event_date,
         c.id AS client_id,
         c.fullname AS client_name,
         b.banquet AS banquet_id,
@@ -126,7 +123,7 @@ try {
     $stmt2 = $pdo->prepare("
     SELECT
         cl.fullname AS client_fullname,
-        bk.datex AS event_date,
+        bk.reg_date AS registration_date,
         SUM(
             CASE
                 WHEN m.id = 1 THEN bk.pax * bb.rate
@@ -148,32 +145,32 @@ try {
     WHERE
         bk.id = :booking_id
     GROUP BY
-        cl.fullname, bk.datex, bk.commentsx, bk.rent
+        cl.fullname, bk.reg_date, bk.commentsx, bk.rent
     ORDER BY
-        bk.datex DESC
+        bk.reg_date DESC
 ");
     $stmt2->execute([':booking_id' => $default_booking_id]);
     $result2 = $stmt2->fetch(PDO::FETCH_ASSOC);
 
-    // Date formatting 
-    if ($result2) {
-        $originalDate = $result2['event_date'];
-        if (!empty($originalDate)) {
-            $eventDate = DateTime::createFromFormat('Y-m-d', $originalDate);
-            if ($eventDate) {
-                $date = $eventDate->format('Ymd');
-            } else {
-                $date = 'No date Available'; 
-            }
+// Date formatting 
+if ($result2) {
+    $originalDate = $result2['registration_date'];
+    if (!empty($originalDate)) {
+        $regdate = DateTime::createFromFormat('Y-m-d H:i:s', $originalDate);
+        if ($regdate) {
+            $date = $regdate->format('Ymd');
         } else {
-            $date = ' No date Available'; 
+            $date = 'No date Available'; 
         }
-        $total_sales_amount = -$result2['total_bill_amount'];
-        $partyName = $row['client_name'] . ' - ' . $row['client_id'];
     } else {
-        $date = "No date Available";
-        $total_sales_amount = "-0.00";
+        $date = 'No date Available'; 
     }
+    $total_sales_amount = -$result2['total_bill_amount'];
+    $partyName = $row['client_name'] . ' - ' . $row['client_id'];
+} else {
+    $date = "No date Available";
+    $total_sales_amount = "-0.00";
+}
 
 
 // Start of xml of sales voucher
@@ -650,14 +647,18 @@ try {
         $vch->addChild('DATE', $row['payment_date']);
         $vch->addChild('VCHSTATUSDATE', $row['payment_date']);
         $vch->addChild('GUID', $voucher_receipt_id);
-        // Receipt Narration modification
-         // Start building the NARRATION string with receipt_id and comments
-    $narration = "BE receipt id: {$row['receipt_id']} / {$row['comments']}";
+         $narration = "BRN: {$default_booking_id} | BE receipt id: {$row['banquet_receipt_number']} | {$row['comments']}";
 
-    // Check if the payment mode is "online" and add the transaction ID if true
-    if ($row['payment_mode'] == 'Online') {
-        $narration .= " / Transaction ID: {$row['transaction_id']}";
-    }
+         // Check if the payment mode is "Online" and add the transaction ID if true
+         if ($row['payment_mode'] == 'Online') {
+             $narration .= " | Transaction ID: {$row['transaction_id']}";
+         }
+ 
+         // Check if the payment mode is "Cheque" and add the cheque details
+         if ($row['payment_mode'] == 'Cheque') {
+             $narration .= " | Cheque No: {$row['cheque_number']} | Cheque Bank: {$row['cheque_bank']} | Cheque Date: {$row['cheque_date']}";
+         }
+ 
 
     // Add the NARRATION as a child element
     $vch->addChild('NARRATION', $narration);
@@ -1024,7 +1025,7 @@ if (isset($_GET['download']) && $_GET['download'] == 'true') {
         // Prepare SQL query to fetch data from the database
         $sql = "SELECT 
                     b.id AS booking_id,
-                    b.datex AS booking_date,
+                    b.datex AS event_date,
                     c.id AS client_id,
                     c.fullname AS client_name,
                     b.banquet AS banquet_id,
@@ -1058,15 +1059,24 @@ if (isset($_GET['download']) && $_GET['download'] == 'true') {
         // Based on the requested format, generate either XML or CSV
         if ($format === 'csv') {
             // Prepare the CSV file content
-            $filename = 'booking_data_' . date("Ymd") . '.csv';
+           // Assuming $startDate and $endDate are your start and end dates in 'YYYY-MM-DD' format
+            $startMonth = date("F", strtotime($startDate));  // Full month name from start date
+            $endMonth = date("F", strtotime($endDate));      // Full month name from end date
+
+            // Format the filename using start month and end month
+            $formattedDate = strtolower($startMonth) . '-' . strtolower($endMonth);
+            $filename = 'client_data_' . $formattedDate . '.csv';
+
+            // Set the headers for the CSV file download
             header('Content-Type: text/csv');
             header('Content-Disposition: attachment; filename="' . $filename . '"');
+
             
             // Open the output stream for CSV
             $output = fopen('php://output', 'w');
             
             // Column headers with combined Client Name and Client ID
-            fputcsv($output, ['Booking ID', 'Client Name - Client ID', 'Banquet ID']); // Adjusted header
+            fputcsv($output, ['BRN', 'Client Name - Client ID', 'Event Date']); // Adjusted header
             
             // Output each row of data
             foreach ($filteredData as $row) {
@@ -1075,7 +1085,7 @@ if (isset($_GET['download']) && $_GET['download'] == 'true') {
                 fputcsv($output, [
                     $row['booking_id'],
                     $clientNameAndId, // Combined client name and id
-                    $row['banquet_id']
+                    $row['event_date']
                 ]);
             }
             
@@ -1084,9 +1094,14 @@ if (isset($_GET['download']) && $_GET['download'] == 'true') {
 
         } elseif ($format === 'xml') {
             if (isset($_GET['start_date']) && !empty($_GET['start_date'])) {
-                        $startDate = $_GET['start_date'];
-                        $formattedDate = date("F", strtotime($startDate)) . date("y", strtotime($startDate));
-                        $filename = strtolower($formattedDate) . '.xml';
+                        $startMonth = date("F", strtotime($startDate));  // Full month name from start date
+                        $endMonth = date("F", strtotime($endDate));      // Full month name from end date
+                        
+                        // Format the filename using start month and end month
+                        $formattedDate = strtolower($startMonth) . '-' . strtolower($endMonth);
+                        $filename = $formattedDate . '.xml';
+                        
+                        // Set the headers for the file download
                         header('Content-Type: application/xml');
                         header('Content-Disposition: attachment; filename="' . $filename . '"');
                         echo $xml->asXML();
