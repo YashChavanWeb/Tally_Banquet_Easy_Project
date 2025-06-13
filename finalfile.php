@@ -371,87 +371,87 @@ try {
 
 // start of the splits xml code
 
-foreach ($results as $result) {
-    $inventoryEntries = $vch->addChild('ALLINVENTORYENTRIES.LIST');
-    $service_name = $result['service_name'];
-    $stock_item_amount = $result['total_amount'];
-    $inventoryEntries->addChild('STOCKITEMNAME', $service_name); 
-    $fixedElements = [
-        'ISDEEMEDPOSITIVE' => 'No',
-        'ISGSTASSESSABLEVALUEOVERRIDDEN' => 'No',
-        'STRDISGSTAPPLICABLE' => 'No',
-        'CONTENTNEGISPOS' => 'No',
-        'ISLASTDEEMEDPOSITIVE' => 'No',
-        'ISAUTONEGATE' => 'No',
-        'ISCUSTOMSCLEARANCE' => 'No',
-        'ISTRACKCOMPONENT' => 'No',
-        'ISTRACKPRODUCTION' => 'No',
-        'ISPRIMARYITEM' => 'No',
-        'ISSCRAP' => 'No'
-    ];
-    foreach ($fixedElements as $key => $value) {
-        $inventoryEntries->addChild($key, $value);
-    }
-    $inventoryEntries->addChild('AMOUNT', $stock_item_amount);
-    $batchAllocations = $inventoryEntries->addChild('BATCHALLOCATIONS.LIST');
-    $batchAllocations->addChild('GODOWNNAME', 'Main Location');
-    $batchAllocations->addChild('BATCHNAME', 'Primary Batch');
-    $batchAllocations->addChild('DYNAMICCSTISCLEARED', 'No');
-    $batchAllocations->addChild('AMOUNT', $stock_item_amount);
-    $batchEmptyLists = [
-        'ADDITIONALDETAILS.LIST',
-        'VOUCHERCOMPONENTLIST.LIST'
-    ];
-    foreach ($batchEmptyLists as $listName) {
-        $batchAllocations->addChild($listName, ' ');
-    }
-    $accountingAllocations = $inventoryEntries->addChild('ACCOUNTINGALLOCATIONS.LIST');
-    $oldAuditEntryIdsList = $accountingAllocations->addChild('OLDAUDITENTRYIDS.LIST');
-    $oldAuditEntryIdsList->addAttribute('TYPE', 'Number');
-    $oldAuditEntryIdsList->addChild('OLDAUDITENTRYIDS', '-1');
-    $accountingAllocations->addChild('LEDGERNAME', $ledger_name); 
-    $accountingFixedElements = [
-        'ISDEEMEDPOSITIVE' => 'No',
-        'LEDGERFROMITEM' => 'No',
-        'REMOVEZEROENTRIES' => 'No',
-        'ISPARTYLEDGER' => 'No',
-        'GSTOVERRIDDEN' => 'No',
-        'ISGSTASSESSABLEVALUEOVERRIDDEN' => 'No',
-        'STRDISGSTAPPLICABLE' => 'No',
-        'STRDGSTISPARTYLEDGER' => 'No',
-        'STRDGSTISDUTYLEDGER' => 'No',
-        'CONTENTNEGISPOS' => 'No',
-        'ISLASTDEEMEDPOSITIVE' => 'No',
-        'ISCAPVATTAXALTERED' => 'No',
-        'ISCAPVATNOTCLAIMED' => 'No'
-    ];
-    foreach ($accountingFixedElements as $key => $value) {
-        $accountingAllocations->addChild($key, $value);
-    }
-    $accountingAllocations->addChild('AMOUNT', $stock_item_amount);
-    $accountingEmptyLists = [
-        'SERVICETAXDETAILS.LIST', 'BANKALLOCATIONS.LIST', 'BILLALLOCATIONS.LIST', 
-        'INTERESTCOLLECTION.LIST', 'OLDAUDITENTRIES.LIST', 'ACCOUNTAUDITENTRIES.LIST', 
-        'AUDITENTRIES.LIST', 'INPUTCRALLOCS.LIST', 'DUTYHEADDETAILS.LIST', 
-        'EXCISEDUTYHEADDETAILS.LIST', 'RATEDETAILS.LIST', 'SUMMARYALLOCS.LIST', 
-        'CENVATDUTYALLOCATIONS.LIST', 'STPYMTDETAILS.LIST', 'EXCISEPAYMENTALLOCATIONS.LIST', 
-        'TAXBILLALLOCATIONS.LIST', 'TAXOBJECTALLOCATIONS.LIST', 'TDSEXPENSEALLOCATIONS.LIST', 
-        'VATSTATUTORYDETAILS.LIST', 'COSTTRACKALLOCATIONS.LIST', 'REFVOUCHERDETAILS.LIST', 
-        'INVOICEWISEDETAILS.LIST', 'VATITCDETAILS.LIST', 'ADVANCETAXDETAILS.LIST', 
-        'TAXTYPEALLOCATIONS.LIST'
-    ];
-    foreach ($accountingEmptyLists as $listName) {
-        $accountingAllocations->addChild($listName, ' ');
-    }
-    $finalEmptyLists = [
-        'DUTYHEADDETAILS.LIST', 'RATEDETAILS.LIST', 'SUPPLEMENTARYDUTYHEADDETAILS.LIST', 
-        'TAXOBJECTALLOCATIONS.LIST', 'REFVOUCHERDETAILS.LIST', 'EXCISEALLOCATIONS.LIST', 
-        'EXPENSEALLOCATIONS.LIST'
-    ];
-    foreach ($finalEmptyLists as $listName) {
-        $inventoryEntries->addChild($listName, ' ');
-    }
-}
+// foreach ($results as $result) {
+//     $inventoryEntries = $vch->addChild('ALLINVENTORYENTRIES.LIST');
+//     $service_name = $result['service_name'];
+//     $stock_item_amount = $result['total_amount'];
+//     $inventoryEntries->addChild('STOCKITEMNAME', $service_name); 
+//     $fixedElements = [
+//         'ISDEEMEDPOSITIVE' => 'No',
+//         'ISGSTASSESSABLEVALUEOVERRIDDEN' => 'No',
+//         'STRDISGSTAPPLICABLE' => 'No',
+//         'CONTENTNEGISPOS' => 'No',
+//         'ISLASTDEEMEDPOSITIVE' => 'No',
+//         'ISAUTONEGATE' => 'No',
+//         'ISCUSTOMSCLEARANCE' => 'No',
+//         'ISTRACKCOMPONENT' => 'No',
+//         'ISTRACKPRODUCTION' => 'No',
+//         'ISPRIMARYITEM' => 'No',
+//         'ISSCRAP' => 'No'
+//     ];
+//     foreach ($fixedElements as $key => $value) {
+//         $inventoryEntries->addChild($key, $value);
+//     }
+//     $inventoryEntries->addChild('AMOUNT', $stock_item_amount);
+//     $batchAllocations = $inventoryEntries->addChild('BATCHALLOCATIONS.LIST');
+//     $batchAllocations->addChild('GODOWNNAME', 'Main Location');
+//     $batchAllocations->addChild('BATCHNAME', 'Primary Batch');
+//     $batchAllocations->addChild('DYNAMICCSTISCLEARED', 'No');
+//     $batchAllocations->addChild('AMOUNT', $stock_item_amount);
+//     $batchEmptyLists = [
+//         'ADDITIONALDETAILS.LIST',
+//         'VOUCHERCOMPONENTLIST.LIST'
+//     ];
+//     foreach ($batchEmptyLists as $listName) {
+//         $batchAllocations->addChild($listName, ' ');
+//     }
+//     $accountingAllocations = $inventoryEntries->addChild('ACCOUNTINGALLOCATIONS.LIST');
+//     $oldAuditEntryIdsList = $accountingAllocations->addChild('OLDAUDITENTRYIDS.LIST');
+//     $oldAuditEntryIdsList->addAttribute('TYPE', 'Number');
+//     $oldAuditEntryIdsList->addChild('OLDAUDITENTRYIDS', '-1');
+//     $accountingAllocations->addChild('LEDGERNAME', $ledger_name); 
+//     $accountingFixedElements = [
+//         'ISDEEMEDPOSITIVE' => 'No',
+//         'LEDGERFROMITEM' => 'No',
+//         'REMOVEZEROENTRIES' => 'No',
+//         'ISPARTYLEDGER' => 'No',
+//         'GSTOVERRIDDEN' => 'No',
+//         'ISGSTASSESSABLEVALUEOVERRIDDEN' => 'No',
+//         'STRDISGSTAPPLICABLE' => 'No',
+//         'STRDGSTISPARTYLEDGER' => 'No',
+//         'STRDGSTISDUTYLEDGER' => 'No',
+//         'CONTENTNEGISPOS' => 'No',
+//         'ISLASTDEEMEDPOSITIVE' => 'No',
+//         'ISCAPVATTAXALTERED' => 'No',
+//         'ISCAPVATNOTCLAIMED' => 'No'
+//     ];
+//     foreach ($accountingFixedElements as $key => $value) {
+//         $accountingAllocations->addChild($key, $value);
+//     }
+//     $accountingAllocations->addChild('AMOUNT', $stock_item_amount);
+//     $accountingEmptyLists = [
+//         'SERVICETAXDETAILS.LIST', 'BANKALLOCATIONS.LIST', 'BILLALLOCATIONS.LIST', 
+//         'INTERESTCOLLECTION.LIST', 'OLDAUDITENTRIES.LIST', 'ACCOUNTAUDITENTRIES.LIST', 
+//         'AUDITENTRIES.LIST', 'INPUTCRALLOCS.LIST', 'DUTYHEADDETAILS.LIST', 
+//         'EXCISEDUTYHEADDETAILS.LIST', 'RATEDETAILS.LIST', 'SUMMARYALLOCS.LIST', 
+//         'CENVATDUTYALLOCATIONS.LIST', 'STPYMTDETAILS.LIST', 'EXCISEPAYMENTALLOCATIONS.LIST', 
+//         'TAXBILLALLOCATIONS.LIST', 'TAXOBJECTALLOCATIONS.LIST', 'TDSEXPENSEALLOCATIONS.LIST', 
+//         'VATSTATUTORYDETAILS.LIST', 'COSTTRACKALLOCATIONS.LIST', 'REFVOUCHERDETAILS.LIST', 
+//         'INVOICEWISEDETAILS.LIST', 'VATITCDETAILS.LIST', 'ADVANCETAXDETAILS.LIST', 
+//         'TAXTYPEALLOCATIONS.LIST'
+//     ];
+//     foreach ($accountingEmptyLists as $listName) {
+//         $accountingAllocations->addChild($listName, ' ');
+//     }
+//     $finalEmptyLists = [
+//         'DUTYHEADDETAILS.LIST', 'RATEDETAILS.LIST', 'SUPPLEMENTARYDUTYHEADDETAILS.LIST', 
+//         'TAXOBJECTALLOCATIONS.LIST', 'REFVOUCHERDETAILS.LIST', 'EXCISEALLOCATIONS.LIST', 
+//         'EXPENSEALLOCATIONS.LIST'
+//     ];
+//     foreach ($finalEmptyLists as $listName) {
+//         $inventoryEntries->addChild($listName, ' ');
+//     }
+// }
 /*
 
 
@@ -550,7 +550,81 @@ foreach ($emptylists3 as $listName) {
     die("Database Connection failed: " . $e->getMessage());
 } 
 
+
+
+
+
+
+
+
+ // Create ledger entries for each service
+            foreach ($results as $result) {
+                $ledgerEntries = $vch->addChild('LEDGERENTRIES.LIST');
+                
+                $service_name = $result['service_name'];
+                $service_amount = $result['total_amount'];
+                
+                $ledgerEntries->addChild('LEDGERNAME', $service_name);
+                
+                // Add standard ledger entry elements
+                $ledgerEntries->addChild('ISDEEMEDPOSITIVE', 'No');
+                $ledgerEntries->addChild('LEDGERFROMITEM', 'No');
+                $ledgerEntries->addChild('REMOVEZEROENTRIES', 'No');
+                $ledgerEntries->addChild('ISPARTYLEDGER', 'No');
+                $ledgerEntries->addChild('GSTOVERRIDDEN', 'No');
+                $ledgerEntries->addChild('ISGSTASSESSABLEVALUEOVERRIDDEN', 'No');
+                $ledgerEntries->addChild('STRDISGSTAPPLICABLE', 'No');
+                $ledgerEntries->addChild('STRDGSTISPARTYLEDGER', 'No');
+                $ledgerEntries->addChild('STRDGSTISDUTYLEDGER', 'No');
+                $ledgerEntries->addChild('CONTENTNEGISPOS', 'No');
+                $ledgerEntries->addChild('ISLASTDEEMEDPOSITIVE', 'No');
+                $ledgerEntries->addChild('ISCAPVATTAXALTERED', 'No');
+                $ledgerEntries->addChild('ISCAPVATNOTCLAIMED', 'No');
+                
+                $ledgerEntries->addChild('AMOUNT', $service_amount);
+                
+                // Add empty lists
+                $emptyLists = [
+                    'SERVICETAXDETAILS.LIST',
+                    'BANKALLOCATIONS.LIST',
+                    'BILLALLOCATIONS.LIST',
+                    'INTERESTCOLLECTION.LIST',
+                    'OLDAUDITENTRIES.LIST',
+                    'ACCOUNTAUDITENTRIES.LIST',
+                    'AUDITENTRIES.LIST',
+                    'INPUTCRALLOCS.LIST',
+                    'DUTYHEADDETAILS.LIST',
+                    'EXCISEDUTYHEADDETAILS.LIST',
+                    'RATEDETAILS.LIST',
+                    'SUMMARYALLOCS.LIST',
+                    'CENVATDUTYALLOCATIONS.LIST',
+                    'STPYMTDETAILS.LIST',
+                    'EXCISEPAYMENTALLOCATIONS.LIST',
+                    'TAXBILLALLOCATIONS.LIST',
+                    'TAXOBJECTALLOCATIONS.LIST',
+                    'TDSEXPENSEALLOCATIONS.LIST',
+                    'VATSTATUTORYDETAILS.LIST',
+                    'COSTTRACKALLOCATIONS.LIST',
+                    'REFVOUCHERDETAILS.LIST',
+                    'INVOICEWISEDETAILS.LIST',
+                    'VATITCDETAILS.LIST',
+                    'ADVANCETAXDETAILS.LIST',
+                    'TAXTYPEALLOCATIONS.LIST'
+                ];
+                
+                foreach ($emptyLists as $listName) {
+                    $ledgerEntries->addChild($listName, ' ');
+                }
+            }
+
+
+
+
+
+
+
 /*
+
 
 
 
